@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skreenit - Recruiter</title>
+  <link rel="stylesheet" href="https://auth.skreenit.com/assets/css/dashboard-styles.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+</head>
+<body>
+  <a href="https://skreenit.com" style="position:fixed;left:16px;top:16px;z-index:10;display:inline-block;">
+    <img src="https://auth.skreenit.com/assets/images/logo.png" alt="Skreenit" style="height:48px; width:auto;" />
+  </a>
+  <div class="dashboard-container">
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <img src="https://auth.skreenit.com/assets/images/logo.png" alt="Skreenit" style="height:28px; width:auto; display:block;" />
+        </div>
+      </div>
+      <ul class="nav-menu">
+        <li class="nav-item active" data-section="overview">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Overview</span>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <img src="https://via.placeholder.com/40" alt="User" class="user-avatar">
+          <div class="user-details">
+            <span class="user-name">Loading...</span>
+            <span class="user-role">Recruiter</span>
+          </div>
+        </div>
+        <button id="logoutBtn" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </nav>
+    <main class="main-content">
+      <div id="notifications" class="activity-list"><div class="loading">Loading...</div></div>
+    </main>
+  </div>
+  <script type="module" src="./assets/js/api-services.js"></script>
+  <script type="module" src="./assets/js/recruiter-dashboard.js"></script>
+</body>
+</html>

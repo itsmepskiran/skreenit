@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skreenit - Registration</title>
+  <link rel="stylesheet" href="https://auth.skreenit.com/assets/css/dashboard-styles.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    .auth-wrapper { max-width: 640px; margin: 4rem auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.1); }
+    .auth-header { padding: 1.5rem 2rem; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 0.75rem; }
+    .auth-header h1 { font-size: 1.5rem; margin: 0; color: #2d3748; }
+    .auth-body { padding: 2rem; }
+    .hidden { display: none; }
+    .notice { background:#f0fff4; border:1px solid #9ae6b4; color:#22543d; padding:1rem; border-radius:8px; margin-bottom:1rem; }
+    .error-message { color: #e53e3e; margin-bottom: 1rem; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <a href="https://skreenit.com" style="position:fixed;left:16px;top:16px;z-index:10;display:inline-block;">
+    <img src="https://auth.skreenit.com/assets/images/logo.png" alt="Skreenit" style="height:48px;width:auto;" />
+  </a>
+  <div class="auth-wrapper">
+    <img src="https://auth.skreenit.com/assets/images/logobrand.png" alt="Skreenit" style="width:100%;height:auto;display:block;border-top-left-radius:12px;border-top-right-radius:12px;" />
+    <div class="auth-header">
+      <i class="fas fa-user-plus"></i>
+      <h1>Create Your Account</h1>
+    </div>
+    <div class="auth-body">
+      <div id="formError" class="error-message"></div>
+      <div id="thankYou" class="hidden">
+        <div class="notice">
+          <strong>Thank you for registering with us.</strong>
+          <p>We have sent your User ID and a temporary password to your registered email address.</p>
+        </div>
+        <a class="btn btn-primary" href="./login.html">Go to Login</a>
+      </div>
+
+      <form id="registrationForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="full_name">Full Name*</label>
+            <input type="text" id="full_name" name="full_name" required />
+          </div>
+          <div class="form-group">
+            <label for="mobile">Mobile*</label>
+            <input type="text" id="mobile" name="mobile" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">Email*</label>
+            <input type="email" id="email" name="email" required />
+          </div>
+          <div class="form-group">
+            <label for="location">Location*</label>
+            <input type="text" id="location" name="location" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="role">Register as*</label>
+          <select id="role" name="role" required>
+            <option value="candidate">Candidate</option>
+            <option value="recruiter">Recruiter</option>
+          </select>
+        </div>
+
+        <div id="recruiterFields" class="hidden">
+          <div class="form-group">
+            <label for="company_id">Company ID*</label>
+            <input type="text" id="company_id" name="company_id" />
+          </div>
+        </div>
+
+        <div id="candidateFields" class="hidden">
+          <div class="form-group">
+            <label for="resume">Resume (PDF)</label>
+            <input type="file" id="resume" name="resume" accept="application/pdf" />
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding:0; margin-top: 1rem;">
+          <button type="submit" class="btn btn-primary">Register</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script type="module">
+    import { handleRegistrationSubmit, wireRegistrationPage } from 'https://auth.skreenit.com/assets/js/auth-pages.js'
+    const form = document.getElementById('registrationForm')
+    form.addEventListener('submit', async (e) => {
+      const ok = await handleRegistrationSubmit(e)
+      if (ok) {
+        form.classList.add('hidden')
+        document.getElementById('thankYou').classList.remove('hidden')
+      }
+    })
+    wireRegistrationPage()
+  </script>
+</body>
+</html>

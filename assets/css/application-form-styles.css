@@ -1,0 +1,36 @@
+/* Minimal styles for Detailed Application Form (shared) */
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f5f7fa;color:#2d3748;margin:0}
+.navbar{background:#fff;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100}
+.nav-container{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem}
+.nav-logo{display:flex;align-items:center;gap:.5rem;font-weight:600}
+.nav-logo .logo{height:48px;width:auto}
+.nav-actions{display:flex;gap:.5rem}
+.save-draft-btn,.logout-btn{background:#e2e8f0;border:none;border-radius:8px;padding:.5rem .75rem;cursor:pointer}
+.save-draft-btn:hover,.logout-btn:hover{background:#cbd5e0}
+.progress-container{max-width:1100px;margin:1rem auto;padding:0 1rem}
+.progress-bar{height:6px;background:#e2e8f0;border-radius:999px;overflow:hidden}
+.progress-fill{height:6px;background:linear-gradient(135deg,#667eea,#764ba2);width:0}
+.progress-steps{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.5rem}
+.step{display:flex;align-items:center;gap:.35rem;color:#718096}
+.step.active{color:#2d3748}
+.main-content{max-width:1100px;margin:1rem auto;background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08);padding:1rem}
+.application-form .step-header{display:flex;align-items:center;gap:.75rem;margin:.5rem 0 1rem}
+.form-section{margin:1rem 0}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+.form-group{margin:.75rem 0}
+.form-group label{display:block;margin-bottom:.35rem}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:.65rem;border:1px solid #e2e8f0;border-radius:8px}
+.checkbox-group{display:flex;align-items:center;gap:.5rem}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.file-upload{border:1px dashed #cbd5e0;border-radius:8px;padding:1rem;text-align:center;color:#718096}
+.form-navigation{display:flex;justify-content:space-between;gap:.5rem;margin:1rem 0}
+.nav-btn{border:none;border-radius:8px;padding:.65rem 1rem;cursor:pointer}
+.prev-btn{background:#e2e8f0;color:#2d3748}
+.next-btn,.submit-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200}
+.modal .modal-content{max-width:520px;margin:10% auto;background:#fff;border-radius:12px;padding:2rem;text-align:center}
+.success-icon{font-size:3rem;color:#38a169}
+.success-btn{background:#38a169;color:#fff;border:none;border-radius:8px;padding:.65rem 1rem;cursor:pointer;margin-top:.5rem}
+@media (max-width:900px){.form-row{grid-template-columns:1fr 1fr}.upload-grid{grid-template-columns:1fr}}
+@media (max-width:600px){.form-row{grid-template-columns:1fr}}

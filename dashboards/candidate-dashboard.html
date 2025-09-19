@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skreenit - Candidate Dashboard</title>
+    <link rel="stylesheet" href="https://auth.skreenit.com/assets/css/dashboard-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <a href="https://skreenit.com" style="position:fixed;left:16px;top:16px;z-index:10;display:inline-block;">
+      <img src="https://auth.skreenit.com/assets/images/logo.png" alt="Skreenit" style="height:48px;width:auto;" />
+    </a>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <img src="https://auth.skreenit.com/assets/images/logo.png" alt="Skreenit" style="height:28px;width:auto;display:block;" />
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-section="overview">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Overview</span>
+                </li>
+                <li class="nav-item" data-section="jobs">
+                    <i class="fas fa-search"></i>
+                    <span>Job Search</span>
+                </li>
+                <li class="nav-item" data-section="applications">
+                    <i class="fas fa-file-alt"></i>
+                    <span>My Applications</span>
+                </li>
+                <li class="nav-item" data-section="profile">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="https://via.placeholder.com/40" alt="User" class="user-avatar">
+                    <div class="user-details">
+                        <span class="user-name">Loading...</span>
+                        <span class="user-role">Candidate</span>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <section id="overviewSection" class="dashboard-section">
+                <div class="section-header">
+                    <h1>Dashboard Overview</h1>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-file-alt"></i></div><div class="stat-info"><span class="stat-number">0</span><span class="stat-label">Applications</span></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-info"><span class="stat-number">0</span><span class="stat-label">Pending</span></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-video"></i></div><div class="stat-info"><span class="stat-number">0</span><span class="stat-label">Interviews</span></div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-briefcase"></i></div><div class="stat-info"><span class="stat-number">0</span><span class="stat-label">Available Jobs</span></div></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="./assets/js/candidate-dashboard.js"></script>
+</body>
+</html>

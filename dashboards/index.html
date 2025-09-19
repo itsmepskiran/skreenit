@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skreenit - Dashboards</title>
+  <link rel="stylesheet" href="https://auth.skreenit.com/assets/css/dashboard-styles.css" />
+</head>
+<body>
+  <a href="https://skreenit.com" style="position:fixed;left:16px;top:16px;z-index:10;display:inline-block;">
+    <img src="https://auth.skreenit.com/assets/images/logo.png" alt="Skreenit" style="height:48px;width:auto;" />
+  </a>
+  <div style="max-width:720px;margin:6rem auto;background:#fff;padding:2rem;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,0.1);">
+    <h2>Redirecting to your dashboard...</h2>
+    <p>If you are not redirected automatically, please <a href="https://auth.skreenit.com/login.html">login</a>.</p>
+  </div>
+  <script type="module">
+    import { supabase } from './assets/js/supabase-config.js'
+    (async () => {
+      const { data, error } = await supabase.auth.getUser()
+      if (error || !data?.user) {
+        window.location.href = 'https://auth.skreenit.com/login.html'
+        return
+      }
+      const role = data.user.user_metadata?.role
+      if (role === 'candidate') window.location.href = '/candidate-dashboard.html'
+      else if (role === 'recruiter') window.location.href = '/recruiter-dashboard.html'
+      else window.location.href = 'https://auth.skreenit.com/login.html'
+    })()
+  </script>
+</body>
+</html>

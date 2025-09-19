@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skreenit - Complete Your Application</title>
+    <link rel="stylesheet" href="application-form-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="logo.png" alt="Skreenit Logo" class="logo" />
+                <span>Complete Your Application</span>
+            </div>
+            <div class="nav-actions">
+                <button class="save-draft-btn" id="saveDraftBtn">
+                    <i class="fas fa-save"></i> Save Draft
+                </button>
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-steps">
+            <div class="step active" data-step="1">
+                <i class="fas fa-user"></i>
+                <span>Personal</span>
+            </div>
+            <div class="step" data-step="2">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Education</span>
+            </div>
+            <div class="step" data-step="3">
+                <i class="fas fa-briefcase"></i>
+                <span>Experience</span>
+            </div>
+            <div class="step" data-step="4">
+                <i class="fas fa-cogs"></i>
+                <span>Skills</span>
+            </div>
+            <div class="step" data-step="5">
+                <i class="fas fa-file-upload"></i>
+                <span>Documents</span>
+            </div>
+            <div class="step" data-step="6">
+                <i class="fas fa-check-circle"></i>
+                <span>Review</span>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <form id="detailedApplicationForm" class="application-form">
+            
+            <!-- Step 1: Personal Information -->
+            <div class="form-step active" data-step="1">
+                <div class="step-header">
+                    <h2><i class="fas fa-user"></i> Personal Information</h2>
+                    <p>Tell us about yourself and your contact details</p>
+                </div>
+
+                <div class="form-section">
+                    <h3>Basic Details</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name *</label>
+                            <input type="text" id="firstName" name="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="middleName">Middle Name</label>
+                            <input type="text" id="middleName" name="middleName">
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name *</label>
+                            <input type="text" id="lastName" name="lastName" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dateOfBirth">Date of Birth *</label>
+                            <input type="date" id="dateOfBirth" name="dateOfBirth" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="gender">Gender</label>
+                            <select id="gender" name="gender">
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                                <option value="prefer-not-to-say">Prefer not to say</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="maritalStatus">Marital Status</label>
+                            <select id="maritalStatus" name="maritalStatus">
+                                <option value="">Select Status</option>
+                                <option value="single">Single</option>
+                                <option value="married">Married</option>
+                                <option value="divorced">Divorced</option>
+                                <option value="widowed">Widowed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nationality">Nationality *</label>
+                            <input type="text" id="nationality" name="nationality" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="languages">Languages Known</label>
+                            <input type="text" id="languages" name="languages" placeholder="e.g., English, Hindi, Spanish">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Contact Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" name="email" required readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number *</label>
+                            <input type="tel" id="phone" name="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="alternatePhone">Alternate Phone</label>
+                            <input type="tel" id="alternatePhone" name="alternatePhone">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="currentAddress">Current Address *</label>
+                        <textarea id="currentAddress" name="currentAddress" rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="city">City *</label>
+                            <input type="text" id="city" name="city" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="state">State/Province *</label>
+                            <input type="text" id="state" name="state" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="zipCode">ZIP/Postal Code *</label>
+                            <input type="text" id="zipCode" name="zipCode" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="country">Country *</label>
+                            <input type="text" id="country" name="country" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="sameAsPermanent" name="sameAsPermanent">
+                        <label for="sameAsPermanent">Permanent address is same as current address</label>
+                    </div>
+
+                    <div id="permanentAddressSection">
+                        <div class="form-group">
+                            <label for="permanentAddress">Permanent Address</label>
+                            <textarea id="permanentAddress" name="permanentAddress" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Educational Background -->
+            <div class="form-step" data-step="2">
+                <div class="step-header">
+                    <h2><i class="fas fa-graduation-cap"></i> Educational Background</h2>
+                    <p>Add your educational qualifications starting from the highest degree</p>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-header">
+                        <h3>Education Details</h3>
+                        <button type="button" class="add-btn" id="addEducationBtn">
+                            <i class="fas fa-plus"></i> Add Education
+                        </button>
+                    </div>
+                    
+                    <div id="educationContainer">
+                        <!-- Education entries will be added dynamically -->
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Certifications & Additional Qualifications</h3>
+                    <div class="section-header">
+                        <button type="button" class="add-btn" id="addCertificationBtn">
+                            <i class="fas fa-plus"></i> Add Certification
+                        </button>
+                    </div>
+                    
+                    <div id="certificationContainer">
+                        <!-- Certification entries will be added dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Work Experience -->
+            <div class="form-step" data-step="3">
+                <div class="step-header">
+                    <h2><i class="fas fa-briefcase"></i> Work Experience</h2>
+                    <p>Add your work experience starting from the most recent position</p>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-header">
+                        <h3>Professional Experience</h3>
+                        <button type="button" class="add-btn" id="addExperienceBtn">
+                            <i class="fas fa-plus"></i> Add Experience
+                        </button>
+                    </div>
+                    
+                    <div id="experienceContainer">
+                        <!-- Experience entries will be added dynamically -->
+                    </div>
+
+                    <div class="form-group">
+                        <label for="totalExperience">Total Years of Experience *</label>
+                        <select id="totalExperience" name="totalExperience" required>
+                            <option value="">Select Experience</option>
+                            <option value="0">Fresher</option>
+                            <option value="1">1 Year</option>
+                            <option value="2">2 Years</option>
+                            <option value="3">3 Years</option>
+                            <option value="4">4 Years</option>
+                            <option value="5">5 Years</option>
+                            <option value="6-10">6-10 Years</option>
+                            <option value="11-15">11-15 Years</option>
+                            <option value="16-20">16-20 Years</option>
+                            <option value="20+">20+ Years</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="currentSalary">Current/Last Salary (Annual)</label>
+                        <input type="text" id="currentSalary" name="currentSalary" placeholder="e.g., $50,000 or ₹500,000">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="expectedSalary">Expected Salary (Annual) *</label>
+                        <input type="text" id="expectedSalary" name="expectedSalary" required placeholder="e.g., $60,000 or ₹600,000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Skills & Competencies -->
+            <div class="form-step" data-step="4">
+                <div class="step-header">
+                    <h2><i class="fas fa-cogs"></i> Skills & Competencies</h2>
+                    <p>Showcase your technical and soft skills</p>
+                </div>
+
+                <div class="form-section">
+                    <h3>Technical Skills</h3>
+                    <div class="form-group">
+                        <label for="technicalSkills">Technical Skills *</label>
+                        <textarea id="technicalSkills" name="technicalSkills" rows="4" required 
+                                placeholder="e.g., JavaScript, Python, React, Node.js, AWS, Docker"></textarea>
+                        <small>Separate skills with commas</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="programmingLanguages">Programming Languages</label>
+                        <input type="text" id="programmingLanguages" name="programmingLanguages" 
+                               placeholder="e.g., JavaScript, Python, Java, C++">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="frameworks">Frameworks & Libraries</label>
+                        <input type="text" id="frameworks" name="frameworks" 
+                               placeholder="e.g., React, Angular, Express.js, Django">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="databases">Databases</label>
+                        <input type="text" id="databases" name="databases" 
+                               placeholder="e.g., MySQL, PostgreSQL, MongoDB, Redis">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tools">Tools & Technologies</label>
+                        <input type="text" id="tools" name="tools" 
+                               placeholder="e.g., Git, Docker, AWS, Jenkins, Jira">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Soft Skills & Others</h3>
+                    <div class="form-group">
+                        <label for="softSkills">Soft Skills</label>
+                        <textarea id="softSkills" name="softSkills" rows="3" 
+                                placeholder="e.g., Leadership, Communication, Problem Solving, Team Management"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="achievements">Key Achievements</label>
+                        <textarea id="achievements" name="achievements" rows="4" 
+                                placeholder="Describe your major achievements, awards, or recognitions"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projects">Notable Projects</label>
+                        <textarea id="projects" name="projects" rows="4" 
+                                placeholder="Describe 2-3 significant projects you've worked on"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Documents & Portfolio -->
+            <div class="form-step" data-step="5">
+                <div class="step-header">
+                    <h2><i class="fas fa-file-upload"></i> Documents & Portfolio</h2>
+                    <p>Upload your resume, portfolio, and other relevant documents</p>
+                </div>
+
+                <div class="form-section">
+                    <h3>Required Documents</h3>
+                    <div class="upload-grid">
+                        <div class="upload-item">
+                            <label for="resume">Resume/CV *</label>
+                            <div class="file-upload">
+                                <input type="file" id="resume" name="resume" accept=".pdf,.doc,.docx" required>
+                                <div class="upload-placeholder">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag and drop</span>
+                                    <small>PDF, DOC, DOCX (Max 5MB)</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="upload-item">
+                            <label for="coverLetter">Cover Letter</label>
+                            <div class="file-upload">
+                                <input type="file" id="coverLetter" name="coverLetter" accept=".pdf,.doc,.docx">
+                                <div class="upload-placeholder">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag and drop</span>
+                                    <small>PDF, DOC, DOCX (Max 5MB)</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="upload-item">
+                            <label for="portfolio">Portfolio/Work Samples</label>
+                            <div class="file-upload">
+                                <input type="file" id="portfolio" name="portfolio" accept=".pdf,.zip,.rar" multiple>
+                                <div class="upload-placeholder">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag and drop</span>
+                                    <small>PDF, ZIP, RAR (Max 10MB each)</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="upload-item">
+                            <label for="certificates">Certificates</label>
+                            <div class="file-upload">
+                                <input type="file" id="certificates" name="certificates" accept=".pdf,.jpg,.jpeg,.png" multiple>
+                                <div class="upload-placeholder">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag and drop</span>
+                                    <small>PDF, JPG, PNG (Max 5MB each)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="portfolioLinks">Portfolio/LinkedIn/GitHub Links</label>
+                        <textarea id="portfolioLinks" name="portfolioLinks" rows="4" 
+                                placeholder="Add links to your online portfolio, LinkedIn profile, GitHub, etc. (one per line)"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 6: Review & Submit -->
+            <div class="form-step" data-step="6">
+                <div class="step-header">
+                    <h2><i class="fas fa-check-circle"></i> Review & Submit</h2>
+                    <p>Review your information before submitting your application</p>
+                </div>
+
+                <div class="review-section" id="reviewContent">
+                    <!-- Review content will be populated dynamically -->
+                </div>
+
+                <div class="form-section">
+                    <h3>Additional Information</h3>
+                    <div class="form-group">
+                        <label for="additionalInfo">Anything else you'd like us to know?</label>
+                        <textarea id="additionalInfo" name="additionalInfo" rows="4" 
+                                placeholder="Share any additional information that might be relevant to your application"></textarea>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="termsAccept" name="termsAccept" required>
+                        <label for="termsAccept">I confirm that all information provided is accurate and complete *</label>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="dataConsent" name="dataConsent" required>
+                        <label for="dataConsent">I consent to the processing of my personal data for recruitment purposes *</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="form-navigation">
+                <button type="button" class="nav-btn prev-btn" id="prevBtn" style="display: none;">
+                    <i class="fas fa-arrow-left"></i> Previous
+                </button>
+                <button type="button" class="nav-btn next-btn" id="nextBtn">
+                    Next <i class="fas fa-arrow-right"></i>
+                </button>
+                <button type="submit" class="nav-btn submit-btn" id="submitBtn" style="display: none;">
+                    <i class="fas fa-paper-plane"></i> Submit Application
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content success-modal">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2>Application Submitted Successfully!</h2>
+            <p>Thank you for completing your application. We'll review your information and get back to you soon.</p>
+            <button class="success-btn" onclick="window.location.href='/'">Return to Dashboard</button>
+        </div>
+    </div>
+
+    <script src="application-form.js"></script>
+</body>
+</html>

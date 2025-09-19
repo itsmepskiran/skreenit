@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skreenit - Login</title>
+  <link rel="stylesheet" href="../assets/css/dashboard-styles.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    .auth-wrapper { max-width: 480px; margin: 6rem auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.1); }
+    .auth-header { padding: 1.5rem 2rem; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 0.75rem; }
+    .auth-header h1 { font-size: 1.5rem; margin: 0; color: #2d3748; }
+    .auth-body { padding: 2rem; }
+    .auth-actions { display:flex; justify-content: space-between; align-items:center; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-header">
+      <i class="fas fa-right-to-bracket"></i>
+      <h1>Login</h1>
+    </div>
+    <div class="auth-body">
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">User ID*</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password*</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+        <div class="modal-footer" style="padding:0; margin-top: 1rem;">
+          <button type="submit" class="btn btn-primary">Login</button>
+        </div>
+        <div class="auth-actions">
+          <a href="registration.html">Create an account</a>
+          <a href="update-password.html">Forgot password?</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { handleLoginSubmit } from '../assets/js/auth-pages.js'
+    document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit)
+  </script>
+</body>
+</html>
