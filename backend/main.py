@@ -7,17 +7,37 @@
 import os
 import secrets
 from typing import Optional
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 
+import resend
+from fastapi.responses import JSONResponse
+
 from supabase import create_client, Client
-from resend import Emails, Resend
 
 # ---------- Config ----------
+# Load environment from .env files before reading values
+# 1) Default: current working directory (useful when running from project root)
+# 2) Explicit: backend/.env next to this file
+# 3) Project root .env (../.env relative to this file)
+load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
+load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
+
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")  # NEVER expose on frontend
+# Accept several common aliases for the service role key
+SUPABASE_SERVICE_ROLE_KEY = (
+    os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    or os.getenv("SUPABASE_SERVICE_KEY")
+    or os.getenv("SUPABASE_SERVICE_ROLE")
+    or os.getenv("SUPABASE_SECRET")
+    or os.getenv("SERVICE_ROLE_KEY")
+)
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 EMAIL_FROM = os.getenv("EMAIL_FROM", "no-reply@skreenit.app")
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "https://login.skreenit.com")
@@ -28,9 +48,9 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-resend_client: Optional[Resend] = None
+# Configure Resend API key if provided
 if RESEND_API_KEY:
-    resend_client = Resend(RESEND_API_KEY)
+    resend.api_key = RESEND_API_KEY
 
 app = FastAPI(title="Skreenit Backend", version="1.0.0")
 
@@ -63,10 +83,12 @@ def generate_temp_password(length: int = 12) -> str:
     return "".join(secrets.choice(ALPHABET) for _ in range(length))
 
 async def send_resend_email(to_email: str, subject: str, html: str) -> bool:
-    if not resend_client:
+    if not RESEND_API_KEY:
         return False
     try:
-        Emails(resend_client).send({
+        # Ensure key is set in case environment was loaded after startup
+        resend.api_key = RESEND_API_KEY
+        resend.Emails.send({
             "from": EMAIL_FROM,
             "to": [to_email],
             "subject": subject,
@@ -200,5 +222,19 @@ async def password_changed(payload: PasswordChangedRequest):
     """
     sent = await send_resend_email(str(payload.email), "Skreenit Password Updated", html)
     return {"email_sent": bool(sent)}
+
+@app.post("/send-email")
+async def send_email(payload: dict):
+    try:
+        resend.api_key = RESEND_API_KEY
+        response = resend.Emails.send({
+            "from": EMAIL_FROM,
+            "to": [payload["to"]],
+            "subject": payload["subject"],
+            "html": payload["html"]
+        })
+        return {"status": "sent", "response": response}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 # Run: uvicorn backend.main:app --host 0.0.0.0 --port 8001
