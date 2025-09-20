@@ -42,7 +42,13 @@ form?.addEventListener('submit', (e) => {
 // Save draft/logout placeholders
 const saveDraftBtn = document.getElementById('saveDraftBtn')
 const logoutBtn = document.getElementById('logoutBtn')
-saveDraftBtn?.addEventListener('click', () => alert('Draft saved (placeholder).'))
-logoutBtn?.addEventListener('click', () => window.location.href = 'https://auth.skreenit.com/login.html')
+saveDraftBtn?.addEventListener('click', () => {
+  // Placeholder: persist draft via API/localStorage if needed
+  alert('Draft saved (placeholder).')
+  // Stay on the same page
+})
+logoutBtn?.addEventListener('click', () => {
+  window.location.href = 'https://login.skreenit.com/'
+})
 
 updateUI()

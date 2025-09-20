@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Skreenit - Registration</title>
-  <link rel="stylesheet" href="./assets/css/dashboard-styles.css" />
+  <link rel="stylesheet" href="https://auth.skreenit.com/assets/css/dashboard-styles.css" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <style>
     .auth-wrapper { max-width: 640px; margin: 4rem auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.1); }
@@ -17,7 +17,7 @@
 </head>
 <body>
   <a href="https://skreenit.com" style="position:fixed;left:16px;top:16px;z-index:10;display:inline-block;">
-    <img src="./assets/images/logo.png" alt="Skreenit" style="height:32px;width:auto;" />
+    <img src="https://auth.skreenit.com/assets/images/logo.png" alt="Skreenit" style="height:32px;width:auto;" />
   </a>
   <div class="auth-wrapper">
     <div class="auth-header">
@@ -65,7 +65,7 @@
           <input type="text" id="company_id" name="company_id" />
         </div>
         <div class="modal-footer" style="padding:0; margin-top: 1rem;">
-          <a class="btn btn-secondary" href="/login/">Back to Login</a>
+          <a class="btn btn-secondary" href="https://login.skreenit.com/">Back to Login</a>
           <button type="submit" class="btn btn-primary">Register</button>
         </div>
       </form>
@@ -73,8 +73,11 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+    window.SKREENIT_BACKEND_URL = 'https://skreenit-api.onrender.com';
+  </script>
   <script type="module">
-    import { handleRegistrationSubmit } from './assets/js/auth-pages.js'
+    import { handleRegistrationSubmit } from 'https://auth.skreenit.com/assets/js/auth-pages.js'
 
     const form = document.getElementById('registrationForm')
     form.addEventListener('submit', handleRegistrationSubmit)

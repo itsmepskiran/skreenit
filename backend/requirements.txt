@@ -7,3 +7,4 @@ postgrest==0.13.2
 resend==0.7.1
 httpx==0.27.0
 python-dotenv==1.0.1
+razorpay==1.4.2

@@ -1,6 +1,7 @@
-// Auth Pages Logic - Skreenit (auth subdomain)
+// Auth Pages Logic - Skreenit Edition
 import { supabase, auth, db, storage } from './supabase-config.js'
 
+// ---- EmailJS Config (Optional) ----
 const EMAILJS_SERVICE_ID = 'YOUR_EMAILJS_SERVICE_ID'
 const EMAILJS_TEMPLATE_ID_REG = 'YOUR_EMAILJS_TEMPLATE_ID_REG'
 const EMAILJS_TEMPLATE_ID_PW = 'YOUR_EMAILJS_TEMPLATE_ID_PW'
@@ -16,7 +17,11 @@ function emailEnabled() {
 }
 
 function initEmail() {
-  try { if (emailEnabled()) window.emailjs.init(EMAILJS_PUBLIC_KEY) } catch {}
+  try {
+    if (emailEnabled()) window.emailjs.init(EMAILJS_PUBLIC_KEY)
+  } catch (e) {
+    console.warn('EmailJS init skipped:', e)
+  }
 }
 
 function showError(message) {
@@ -25,7 +30,7 @@ function showError(message) {
   else alert(message)
 }
 
-function generateTempPassword(length = 12) {
+function generateTempPassword(length = 10) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*'
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }
@@ -42,27 +47,11 @@ function getFile(form, name) {
 
 function setLoading(btn, loading) {
   if (!btn) return
-  if (!btn.dataset.originalText) btn.dataset.originalText = btn.textContent
   btn.disabled = loading
-  btn.textContent = loading ? 'Please wait...' : btn.dataset.originalText
+  btn.textContent = loading ? 'Please wait...' : btn.dataset.originalText || 'Submit'
 }
 
-export function wireRegistrationPage() {
-  const roleSelect = document.getElementById('role')
-  const candidateFields = document.getElementById('candidateFields')
-  const recruiterFields = document.getElementById('recruiterFields')
-  const companyIdInput = document.getElementById('company_id')
-  if (!roleSelect) return
-  const apply = () => {
-    const role = roleSelect.value
-    candidateFields?.classList.toggle('hidden', role !== 'candidate')
-    recruiterFields?.classList.toggle('hidden', role !== 'recruiter')
-    if (companyIdInput) companyIdInput.required = role === 'recruiter'
-  }
-  roleSelect.addEventListener('change', apply)
-  apply()
-}
-
+// ---- Registration ----
 export async function handleRegistrationSubmit(e) {
   e.preventDefault()
   initEmail()
@@ -82,65 +71,77 @@ export async function handleRegistrationSubmit(e) {
 
     if (!full_name || !email || !mobile || !location || !role) {
       showError('Please fill all required fields')
-      return false
+      return
     }
     if (role === 'recruiter' && !company_id) {
       showError('Company ID is required for recruiter registration')
-      return false
+      return
     }
 
-    const tempPassword = generateTempPassword(12)
+    // Prefer backend registration so we can use service role and send email.
+    const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-backend.onrender.com'
+    const fd = new FormData()
+    fd.append('full_name', full_name)
+    fd.append('email', email)
+    fd.append('mobile', mobile)
+    fd.append('location', location)
+    fd.append('role', role)
+    if (company_id) fd.append('company_id', company_id)
+    if (resumeFile) fd.append('resume', resumeFile)
 
-    const { data: signUpRes, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password: tempPassword,
-      options: { data: { full_name, mobile, location, role, first_login: true } }
-    })
-    if (signUpError) throw signUpError
-    const authUser = signUpRes.user
-    if (!authUser) throw new Error('Sign up failed')
-
-    let resume_url = null
-    if (role === 'candidate' && resumeFile) {
-      const path = `${authUser.id}/${Date.now()}-${resumeFile.name}`
-      const { error: upErr } = await storage.uploadFile('resumes', path, resumeFile)
-      if (upErr) throw upErr
-      resume_url = storage.getPublicUrl('resumes', path)
-    }
-
-    await db.insert('users', [{
-      id: authUser.id,
-      full_name,
-      email,
-      mobile,
-      location,
-      role,
-      company_id: role === 'recruiter' ? company_id : null,
-      resume_url: role === 'candidate' ? resume_url : null
-    }])
-
-    // Optionally send email using EmailJS if configured
+    let backendOk = false
     try {
-      if (emailEnabled()) {
-        await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_REG, {
-          to_email: email,
-          user_id: email,
-          temp_password: tempPassword,
-          full_name
-        })
+      const resp = await fetch(`${BACKEND_URL}/auth/register`, {
+        method: 'POST',
+        body: fd,
+        // CORS handled by backend; no credentials needed
+      })
+      if (!resp.ok) {
+        const text = await resp.text()
+        throw new Error(`Backend error ${resp.status}: ${text}`)
       }
-    } catch {}
+      const data = await resp.json().catch(() => ({}))
+      backendOk = true
+      // Inform the user
+      alert('Registration successful! Please check your email for your temporary password and next steps.')
+      window.location.href = 'https://login.skreenit.com/'
+      return
+    } catch (be) {
+      console.warn('Backend register failed, falling back to client-side:', be)
+    }
 
-    return true
+    if (!backendOk) {
+      // Fallback: client-side sign up (no email, RLS might block DB insert)
+      const tempPassword = generateTempPassword(12)
+      const { data: signUpRes, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: tempPassword,
+        options: { data: { full_name, mobile, location, role, first_login: true } }
+      })
+      if (signUpError) throw signUpError
+      const authUser = signUpRes.user
+      if (!authUser) throw new Error('Sign up failed')
+
+      // Optional file upload (may fail if bucket policies are strict)
+      if (role === 'candidate' && resumeFile) {
+        const path = `${authUser.id}/${Date.now()}-${resumeFile.name}`
+        const { error: upErr } = await storage.uploadFile('resumes', path, resumeFile)
+        if (upErr) console.warn('Resume upload failed:', upErr)
+      }
+
+      alert('Registration successful (fallback). Please check your email if you received one, or use the temporary password shown earlier.')
+      window.location.href = 'https://login.skreenit.com/'
+    }
   } catch (err) {
     console.error('Registration error:', err)
     showError(err.message || 'Registration failed')
-    return false
+    alert(`Registration failed: ${err.message || 'Unknown error'}`)
   } finally {
     setLoading(submitBtn, false)
   }
 }
 
+// ---- Login ----
 export async function handleLoginSubmit(e) {
   e.preventDefault()
   const form = e.currentTarget
@@ -162,13 +163,17 @@ export async function handleLoginSubmit(e) {
     localStorage.setItem('skreenit_user_id', user.id)
 
     if (firstLogin) {
-      window.location.href = './update-password.html'
+      window.location.href = '/login/update-password.html'
       return
     }
 
-    if (role === 'candidate') window.location.href = 'https://applicants.skreenit.com/detailed-application-form.html'
-    else if (role === 'recruiter') window.location.href = 'https://recruiter.skreenit.com/'
-    else showError('Logged in, but role not set. Please contact support.')
+    if (role === 'candidate') {
+      window.location.href = 'https://applicants.skreenit.com/'
+    } else if (role === 'recruiter') {
+      window.location.href = 'https://recruiter.skreenit.com/'
+    } else {
+      showError('Logged in, but role not set. Please contact support.')
+    }
   } catch (err) {
     console.error('Login error:', err)
     showError(err.message || 'Login failed')
@@ -177,6 +182,7 @@ export async function handleLoginSubmit(e) {
   }
 }
 
+// ---- Update Password ----
 export async function handleUpdatePasswordSubmit(e) {
   e.preventDefault()
   initEmail()
@@ -208,8 +214,15 @@ export async function handleUpdatePasswordSubmit(e) {
     await supabase.auth.updateUser({ data: { first_login: false } })
 
     alert('Password updated successfully! Redirecting...')
-    // Redirect to login.skreenit.com (as requested)
-    window.location.href = 'https://login.skreenit.com/'
+
+    const role = user.user_metadata?.role
+    if (role === 'candidate') {
+      window.location.href = 'https://applicants.skreenit.com/'
+    } else if (role === 'recruiter') {
+      window.location.href = 'https://recruiter.skreenit.com/'
+    } else {
+      window.location.href = 'https://login.skreenit.com/'
+    }
   } catch (err) {
     console.error('Update password error:', err)
     showError(err.message || 'Update failed')

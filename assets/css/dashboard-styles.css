@@ -42,6 +42,13 @@ body {
     font-weight: bold;
 }
 
+/* Ensure image logos in sidebars are visible and large enough */
+.sidebar .logo img {
+    height: 40px !important;
+    width: auto;
+    display: block;
+}
+
 .logo i {
     margin-right: 0.5rem;
     color: #ffd700;

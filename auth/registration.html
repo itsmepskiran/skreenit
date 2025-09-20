@@ -33,7 +33,7 @@
           <strong>Thank you for registering with us.</strong>
           <p>We have sent your User ID and a temporary password to your registered email address.</p>
         </div>
-        <a class="btn btn-primary" href="./login.html">Go to Login</a>
+        <a class="btn btn-primary" href="https://login.skreenit.com/">Go to Login</a>
       </div>
 
       <form id="registrationForm">
@@ -89,17 +89,13 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+    window.SKREENIT_BACKEND_URL = 'https://skreenit-api.onrender.com';
+  </script>
   <script type="module">
-    import { handleRegistrationSubmit, wireRegistrationPage } from 'https://auth.skreenit.com/assets/js/auth-pages.js'
+    import { handleRegistrationSubmit } from 'https://auth.skreenit.com/assets/js/auth-pages.js'
     const form = document.getElementById('registrationForm')
-    form.addEventListener('submit', async (e) => {
-      const ok = await handleRegistrationSubmit(e)
-      if (ok) {
-        form.classList.add('hidden')
-        document.getElementById('thankYou').classList.remove('hidden')
-      }
-    })
-    wireRegistrationPage()
+    form.addEventListener('submit', handleRegistrationSubmit)
   </script>
 </body>
 </html>

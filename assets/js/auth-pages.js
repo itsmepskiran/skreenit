@@ -78,45 +78,64 @@ export async function handleRegistrationSubmit(e) {
       return
     }
 
-    const tempPassword = generateTempPassword(12)
+    // Prefer backend registration so we can use service role and send email.
+    const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-backend.onrender.com'
+    const fd = new FormData()
+    fd.append('full_name', full_name)
+    fd.append('email', email)
+    fd.append('mobile', mobile)
+    fd.append('location', location)
+    fd.append('role', role)
+    if (company_id) fd.append('company_id', company_id)
+    if (resumeFile) fd.append('resume', resumeFile)
 
-    const { data: signUpRes, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password: tempPassword,
-      options: {
-        data: { full_name, mobile, location, role, first_login: true }
+    let backendOk = false
+    try {
+      const resp = await fetch(`${BACKEND_URL}/auth/register`, {
+        method: 'POST',
+        body: fd,
+        // CORS handled by backend; no credentials needed
+      })
+      if (!resp.ok) {
+        const text = await resp.text()
+        throw new Error(`Backend error ${resp.status}: ${text}`)
       }
-    })
-    if (signUpError) throw signUpError
-
-    const authUser = signUpRes.user
-    if (!authUser) throw new Error('Sign up failed')
-
-    let resume_url = null
-    if (role === 'candidate' && resumeFile) {
-      const path = `${authUser.id}/${Date.now()}-${resumeFile.name}`
-      const { error: upErr } = await storage.uploadFile('resumes', path, resumeFile)
-      if (upErr) throw upErr
-      resume_url = (await storage.getPublicUrl('resumes', path)).data?.publicUrl || null
+      const data = await resp.json().catch(() => ({}))
+      backendOk = true
+      // Inform the user
+      alert('Registration successful! Please check your email for your temporary password and next steps.')
+      window.location.href = 'https://login.skreenit.com/'
+      return
+    } catch (be) {
+      console.warn('Backend register failed, falling back to client-side:', be)
     }
 
-    await db.insert('users', [{
-      id: authUser.id,
-      full_name,
-      email,
-      mobile,
-      location,
-      role,
-      company_id: role === 'recruiter' ? company_id : null,
-      resume_url: role === 'candidate' ? resume_url : null
-    }])
+    if (!backendOk) {
+      // Fallback: client-side sign up (no email, RLS might block DB insert)
+      const tempPassword = generateTempPassword(12)
+      const { data: signUpRes, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: tempPassword,
+        options: { data: { full_name, mobile, location, role, first_login: true } }
+      })
+      if (signUpError) throw signUpError
+      const authUser = signUpRes.user
+      if (!authUser) throw new Error('Sign up failed')
 
-    // Email delivery placeholder - frontends should use auth.skreenit.com for provider callbacks
-    alert('Registration successful! Temporary password has been created. Check your email for login details if email delivery is configured. Otherwise use the temporary password shown earlier.')
-    window.location.href = '/login/'
+      // Optional file upload (may fail if bucket policies are strict)
+      if (role === 'candidate' && resumeFile) {
+        const path = `${authUser.id}/${Date.now()}-${resumeFile.name}`
+        const { error: upErr } = await storage.uploadFile('resumes', path, resumeFile)
+        if (upErr) console.warn('Resume upload failed:', upErr)
+      }
+
+      alert('Registration successful (fallback). Please check your email if you received one, or use the temporary password shown earlier.')
+      window.location.href = 'https://login.skreenit.com/'
+    }
   } catch (err) {
     console.error('Registration error:', err)
     showError(err.message || 'Registration failed')
+    alert(`Registration failed: ${err.message || 'Unknown error'}`)
   } finally {
     setLoading(submitBtn, false)
   }
@@ -202,7 +221,7 @@ export async function handleUpdatePasswordSubmit(e) {
     } else if (role === 'recruiter') {
       window.location.href = 'https://recruiter.skreenit.com/'
     } else {
-      window.location.href = '/login/'
+      window.location.href = 'https://login.skreenit.com/'
     }
   } catch (err) {
     console.error('Update password error:', err)
