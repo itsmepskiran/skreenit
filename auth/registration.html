@@ -87,7 +87,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <!-- EmailJS removed: emails are handled server-side via Resend -->
   <script>
     window.SKREENIT_BACKEND_URL = 'https://skreenit-api.onrender.com';
     // Show/hide recruiter/candidate fields based on role
@@ -122,6 +122,10 @@
         // Hide form, show thank you
         form.classList.add('hidden');
         document.getElementById('thankYou').classList.remove('hidden');
+        // Auto-redirect to login after a short delay
+        setTimeout(() => {
+          window.location.href = 'https://login.skreenit.com';
+        }, 3000);
       }
     });
   </script>

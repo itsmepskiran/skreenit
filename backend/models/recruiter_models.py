@@ -46,3 +46,12 @@ class InterviewQuestionRequest(BaseModel):
     question_text: str
     question_order: int
     time_limit: Optional[int] = 120
+
+class RecruiterProfileRequest(BaseModel):
+    user_id: str
+    company_name: str
+    contact_name: str
+    contact_email: str
+    company_website: Optional[str] = None
+    location: Optional[str] = None
+    about: Optional[str] = None

@@ -1,27 +1,15 @@
 // Auth Pages Logic - Skreenit Edition
 import { supabase, auth, db, storage } from './supabase-config.js'
 
-// ---- EmailJS Config (Optional) ----
-const EMAILJS_SERVICE_ID = 'YOUR_EMAILJS_SERVICE_ID'
-const EMAILJS_TEMPLATE_ID_REG = 'YOUR_EMAILJS_TEMPLATE_ID_REG'
-const EMAILJS_TEMPLATE_ID_PW = 'YOUR_EMAILJS_TEMPLATE_ID_PW'
-const EMAILJS_PUBLIC_KEY = 'YOUR_EMAILJS_PUBLIC_KEY'
-
+// Resend integration note: use Resend on the server only. Do not expose API keys in the client.
 function emailEnabled() {
-  return (
-    typeof window !== 'undefined' &&
-    window.emailjs &&
-    EMAILJS_SERVICE_ID !== 'YOUR_EMAILJS_SERVICE_ID' &&
-    EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY'
-  )
+  // Always false on client; email is sent by backend using Resend.
+  return false
 }
 
 function initEmail() {
-  try {
-    if (emailEnabled()) window.emailjs.init(EMAILJS_PUBLIC_KEY)
-  } catch (e) {
-    console.warn('EmailJS init skipped:', e)
-  }
+  // No-op. Backend endpoints should handle email via Resend.
+  return
 }
 
 function showError(message) {
@@ -54,7 +42,7 @@ function setLoading(btn, loading) {
 // ---- Registration ----
 export async function handleRegistrationSubmit(e) {
   e.preventDefault()
-  initEmail()
+  // initEmail removed: Resend is handled server-side.
 
   const form = e.currentTarget
   const submitBtn = form.querySelector('button[type="submit"]')
@@ -79,7 +67,7 @@ export async function handleRegistrationSubmit(e) {
     }
 
     // Prefer backend registration so we can use service role and send email.
-    const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-backend.onrender.com'
+    const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com'
     const fd = new FormData()
     fd.append('full_name', full_name)
     fd.append('email', email)
@@ -102,10 +90,8 @@ export async function handleRegistrationSubmit(e) {
       }
       const data = await resp.json().catch(() => ({}))
       backendOk = true
-      // Inform the user
-      alert('Registration successful! Please check your email for your temporary password and next steps.')
-      window.location.href = 'https://login.skreenit.com/'
-      return
+      // Let page handle thank-you and redirect
+      return true
     } catch (be) {
       console.warn('Backend register failed, falling back to client-side:', be)
     }
@@ -129,8 +115,8 @@ export async function handleRegistrationSubmit(e) {
         if (upErr) console.warn('Resume upload failed:', upErr)
       }
 
-      alert('Registration successful (fallback). Please check your email if you received one, or use the temporary password shown earlier.')
-      window.location.href = 'https://login.skreenit.com/'
+      // Let page handle thank-you and redirect (fallback)
+      return true
     }
   } catch (err) {
     console.error('Registration error:', err)
@@ -163,14 +149,14 @@ export async function handleLoginSubmit(e) {
     localStorage.setItem('skreenit_user_id', user.id)
 
     if (firstLogin) {
-      window.location.href = '/login/update-password.html'
+      window.location.href = 'https://auth.skreenit.com/update-password.html'
       return
     }
 
     if (role === 'candidate') {
-      window.location.href = 'https://applicants.skreenit.com/'
+      window.location.href = 'https://applicant.skreenit.com/detailed-application-form.html'
     } else if (role === 'recruiter') {
-      window.location.href = 'https://recruiter.skreenit.com/'
+      window.location.href = 'https://recruiter.skreenit.com/recruiter-profile.html'
     } else {
       showError('Logged in, but role not set. Please contact support.')
     }
@@ -185,7 +171,7 @@ export async function handleLoginSubmit(e) {
 // ---- Update Password ----
 export async function handleUpdatePasswordSubmit(e) {
   e.preventDefault()
-  initEmail()
+  // initEmail removed: Resend is handled server-side.
 
   const form = e.currentTarget
   const submitBtn = form.querySelector('button[type="submit"]')
@@ -213,16 +199,8 @@ export async function handleUpdatePasswordSubmit(e) {
 
     await supabase.auth.updateUser({ data: { first_login: false } })
 
-    alert('Password updated successfully! Redirecting...')
-
-    const role = user.user_metadata?.role
-    if (role === 'candidate') {
-      window.location.href = 'https://applicants.skreenit.com/'
-    } else if (role === 'recruiter') {
-      window.location.href = 'https://recruiter.skreenit.com/'
-    } else {
-      window.location.href = 'https://login.skreenit.com/'
-    }
+    alert('Password Changed. Please login with New Password')
+    window.location.href = 'https://login.skreenit.com/'
   } catch (err) {
     console.error('Update password error:', err)
     showError(err.message || 'Update failed')

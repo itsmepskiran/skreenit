@@ -383,10 +383,32 @@
             </div>
             <h2>Application Submitted Successfully!</h2>
             <p>Thank you for completing your application. We'll review your information and get back to you soon.</p>
-            <button class="success-btn" onclick="window.location.href='https://dashboards.skreenit.com/candidate-dashboard.html'">Go to Dashboard</button>
+            <button class="success-btn" onclick="window.location.href='https://dashboard.skreenit.com/candidate-dashboard.html'">Go to Dashboard</button>
         </div>
     </div>
 
     <script type="module" src="https://auth.skreenit.com/assets/js/application-form.js"></script>
+    <script>
+      (async function prefill(){
+        try {
+          const userId = localStorage.getItem('skreenit_user_id');
+          if (!userId) return;
+          const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com';
+          const res = await fetch(`${BACKEND_URL}/applicant/detailed-form/${userId}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          const p = data.profile || {};
+          if (p.email) document.getElementById('email').value = p.email;
+          if (p.phone) document.getElementById('phone').value = p.phone;
+          if (p.first_name) document.getElementById('firstName').value = p.first_name;
+          if (p.last_name) document.getElementById('lastName').value = p.last_name;
+          if (p.city) document.getElementById('city').value = p.city;
+          if (p.state) document.getElementById('state').value = p.state;
+          if (p.country) document.getElementById('country').value = p.country;
+        } catch (e) {
+          console.warn('Prefill failed', e);
+        }
+      })();
+    </script>
 </body>
 </html>

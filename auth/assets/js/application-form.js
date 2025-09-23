@@ -35,7 +35,7 @@ form?.addEventListener('submit', (e) => {
   if (modal) {
     modal.style.display = 'block'
   } else {
-    window.location.href = 'https://dashboards.skreenit.com/candidate-dashboard.html'
+    window.location.href = 'https://dashboard.skreenit.com/candidate-dashboard.html'
   }
 })
 

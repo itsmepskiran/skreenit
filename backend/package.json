@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "resend": "^6.1.0"
+  },
+  "devDependencies": {
+    "scoop": "^0.0.2",
+    "supabase": "^2.45.5"
+  }
+}

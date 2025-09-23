@@ -19,4 +19,4 @@ services:
       - key: FRONTEND_BASE_URL
         value: "https://login.skreenit.com"
       - key: ALLOWED_ORIGINS
-        value: "http://localhost:8000,https://skreenit.com,https://www.skreenit.com,https://login.skreenit.com,https://applicants.skreenit.com,https://recruiter.skreenit.com,https://dashboards.skreenit.com,https://auth.skreenit.com"
+        value: "http://localhost:8000,https://skreenit.com,https://www.skreenit.com,https://login.skreenit.com,https://applicant.skreenit.com,https://recruiter.skreenit.com,https://dashboard.skreenit.com,https://auth.skreenit.com"
