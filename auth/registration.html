@@ -28,14 +28,6 @@
     </div>
     <div class="auth-body">
       <div id="formError" class="error-message"></div>
-      <div id="thankYou" class="hidden">
-        <div class="notice">
-          <strong>Thank you for registering with us.</strong>
-          <p>We have sent your User ID and a temporary password to your registered email address.</p>
-        </div>
-        <a class="btn btn-primary" href="https://login.skreenit.com/">Go to Login</a>
-      </div>
-
       <form id="registrationForm">
         <div class="form-row">
           <div class="form-group">
@@ -85,17 +77,53 @@
           <button type="submit" class="btn btn-primary">Register</button>
         </div>
       </form>
+      <div id="thankYou" class="hidden">
+        <div class="notice">
+          <strong>Thank you for registering with us.</strong>
+          <p>We have sent your User ID and a temporary password to your registered email address.</p>
+        </div>
+        <a class="btn btn-primary" href="https://login.skreenit.com/">Go to Login</a>
+      </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
     window.SKREENIT_BACKEND_URL = 'https://skreenit-api.onrender.com';
+    // Show/hide recruiter/candidate fields based on role
+    document.addEventListener('DOMContentLoaded', function() {
+      const roleSelect = document.getElementById('role');
+      const recruiterFields = document.getElementById('recruiterFields');
+      const candidateFields = document.getElementById('candidateFields');
+      function updateFields() {
+        if (roleSelect.value === 'recruiter') {
+          recruiterFields.classList.remove('hidden');
+          candidateFields.classList.add('hidden');
+        } else {
+          recruiterFields.classList.add('hidden');
+          candidateFields.classList.remove('hidden');
+        }
+      }
+      roleSelect.addEventListener('change', updateFields);
+      updateFields();
+    });
   </script>
   <script type="module">
     import { handleRegistrationSubmit } from 'https://auth.skreenit.com/assets/js/auth-pages.js'
     const form = document.getElementById('registrationForm')
-    form.addEventListener('submit', handleRegistrationSubmit)
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      // Hide error and thank you
+      document.getElementById('formError').textContent = '';
+      document.getElementById('thankYou').classList.add('hidden');
+      // Call registration logic
+      const result = await handleRegistrationSubmit(e);
+      if (result === true) {
+        // Hide form, show thank you
+        form.classList.add('hidden');
+        document.getElementById('thankYou').classList.remove('hidden');
+      }
+    });
   </script>
 </body>
 </html>
