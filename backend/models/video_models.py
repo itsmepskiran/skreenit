@@ -18,7 +18,6 @@ class VideoResponseRequest(BaseModel):
     status: Optional[VideoStatus] = VideoStatus.not_started
     recorded_at: Optional[str] = None  # ISO datetime
 
-# --- Add this model for general video interview ---
 class GeneralVideoInterviewRequest(BaseModel):
     candidate_id: str
     status: VideoStatus = VideoStatus.not_started

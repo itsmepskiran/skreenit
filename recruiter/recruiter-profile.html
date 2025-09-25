@@ -89,9 +89,13 @@
       };
 
       try {
+        const token = localStorage.getItem('skreenit_token');
         const resp = await fetch(`${window.SKREENIT_BACKEND_URL}/recruiter/profile`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify(payload),
         });
         if (!resp.ok) {

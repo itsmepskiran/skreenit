@@ -5,6 +5,7 @@ import os, secrets, httpx
 from pathlib import Path
 from typing import Optional
 from routers import auth, applicant, recruiter, dashboard, video, notification, analytics
+from utils_others.error_handler import register_exception_handlers
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Form, File, UploadFile, HTTPException
@@ -49,6 +50,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register centralized application error handlers
+register_exception_handlers(app)
 
 # ---------- Models ----------
 class HealthResponse(BaseModel):

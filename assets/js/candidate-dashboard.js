@@ -20,6 +20,15 @@ async function checkAuth() {
   currentUser = user
   localStorage.setItem('skreenit_user_id', user.id)
   localStorage.setItem('skreenit_role', 'candidate')
+  const nameEl = document.querySelector('.user-name')
+  if (nameEl) nameEl.textContent = user.user_metadata?.full_name || 'Candidate'
+
+  // Persist access token for Authorization headers on this subdomain
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData?.session?.access_token
+    if (token) localStorage.setItem('skreenit_token', token)
+  } catch {}
   return user
 }
 
@@ -32,7 +41,12 @@ function mountContent(node) {
 
 async function fetchGeneralVideoStatus() {
   try {
-    const res = await fetch(`${BACKEND_URL}/applicant/general-video/${currentUser.id}`)
+    const token = localStorage.getItem('skreenit_token')
+    const res = await fetch(`${BACKEND_URL}/applicant/general-video/${currentUser.id}`, {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      }
+    })
     if (!res.ok) return { status: 'missing' }
     return await res.json()
   } catch { return { status: 'missing' } }
@@ -73,7 +87,14 @@ function renderOverview(statusData) {
     fd.append('candidate_id', currentUser.id)
     fd.append('video', file)
     try {
-      const resp = await fetch(`${BACKEND_URL}/applicant/general-video`, { method: 'POST', body: fd })
+      const token = localStorage.getItem('skreenit_token')
+      const resp = await fetch(`${BACKEND_URL}/applicant/general-video`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: fd,
+      })
       if (!resp.ok) throw new Error('Upload failed')
       const data = await resp.json()
       alert('Video uploaded!')

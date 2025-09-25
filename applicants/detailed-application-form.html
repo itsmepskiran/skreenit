@@ -394,7 +394,12 @@
           const userId = localStorage.getItem('skreenit_user_id');
           if (!userId) return;
           const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com';
-          const res = await fetch(`${BACKEND_URL}/applicant/detailed-form/${userId}`);
+          const token = localStorage.getItem('skreenit_token');
+          const res = await fetch(`${BACKEND_URL}/applicant/detailed-form/${userId}`, {
+            headers: {
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            }
+          });
           if (!res.ok) return;
           const data = await res.json();
           const p = data.profile || {};

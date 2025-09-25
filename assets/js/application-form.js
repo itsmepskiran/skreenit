@@ -119,9 +119,13 @@ form?.addEventListener('submit', async (e) => {
   }
 
   try {
+    const token = localStorage.getItem('skreenit_token')
     await fetch(`${BACKEND_URL}/applicant/detailed-form`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(payload),
     })
   } catch (err) {

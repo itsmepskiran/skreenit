@@ -71,7 +71,13 @@ function renderOverview() {
     const appId = node.querySelector('#applicationIdInput').value.trim()
     if (!appId) return
     try {
-      const resp = await fetch(`${BACKEND_URL}/recruiter/application/${appId}/approve`, { method: 'POST' })
+      const token = localStorage.getItem('skreenit_token')
+      const resp = await fetch(`${BACKEND_URL}/recruiter/application/${appId}/approve`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        }
+      })
       if (!resp.ok) throw new Error('Approve failed')
       alert('Application moved to Under Review. Candidate notified (best-effort).')
     } catch (err) {
@@ -84,7 +90,12 @@ function renderOverview() {
     const appId = node.querySelector('#resumeApplicationIdInput').value.trim()
     if (!appId) return
     try {
-      const resp = await fetch(`${BACKEND_URL}/recruiter/application/${appId}/resume-url`)
+      const token = localStorage.getItem('skreenit_token')
+      const resp = await fetch(`${BACKEND_URL}/recruiter/application/${appId}/resume-url`, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        }
+      })
       const data = await resp.json()
       if (!resp.ok) throw new Error(data?.detail || 'Failed to get resume URL')
       const url = data?.resume_url
@@ -104,8 +115,14 @@ function renderOverview() {
     const lines = node.querySelector('#questionsText').value.split('\n').map(s => s.trim()).filter(Boolean)
     const payload = lines.map((q, i) => ({ question_text: q, question_order: i + 1, time_limit: 120 }))
     try {
+      const token = localStorage.getItem('skreenit_token')
       const resp = await fetch(`${BACKEND_URL}/recruiter/job/${jobId}/questions`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload)
       })
       if (!resp.ok) throw new Error('Save failed')
       alert('Questions saved')
@@ -120,7 +137,12 @@ function renderOverview() {
     const listEl = node.querySelector('#questionsList')
     listEl.textContent = 'Loading...'
     try {
-      const resp = await fetch(`${BACKEND_URL}/recruiter/job/${jobId}/questions`)
+      const token = localStorage.getItem('skreenit_token')
+      const resp = await fetch(`${BACKEND_URL}/recruiter/job/${jobId}/questions`, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        }
+      })
       const data = await resp.json()
       if (!resp.ok) throw new Error(data?.detail || 'Fetch failed')
       listEl.innerHTML = '<ol>' + (data.questions || []).map(q => `<li>${q.question_text}</li>`).join('') + '</ol>'

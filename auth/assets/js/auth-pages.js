@@ -153,6 +153,13 @@ export async function handleLoginSubmit(e) {
     localStorage.setItem('skreenit_role', role)
     localStorage.setItem('skreenit_user_id', user.id)
 
+    // Persist access token for backend Authorization headers on this subdomain
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData?.session?.access_token
+      if (token) localStorage.setItem('skreenit_token', token)
+    } catch {}
+
     if (firstLogin) {
       window.location.href = 'https://auth.skreenit.com/update-password.html'
       return
