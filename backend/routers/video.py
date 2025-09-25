@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Header
 from supabase import create_client, Client
 import os
 from models.video_models import VideoResponseRequest, GeneralVideoInterviewRequest
@@ -31,21 +31,38 @@ def list_video_responses(application_id: str):
 
 # --- General Video Interview Endpoints ---
 
-@router.post("/general/{candidate_id}")
-async def upload_general_video(candidate_id: str, video: UploadFile = File(...)):
+@router.post("/general")
+async def upload_general_video_unified(candidate_id: str = File(...), application_id: str = File(None), question_id: str = File(None), video: UploadFile = File(...), authorization: str | None = Header(default=None)):
     try:
-        # You should implement actual file upload to storage here and get the public URL
-        # For demo, we'll just use the filename
-        video_url = f"https://your-storage/{candidate_id}/{video.filename}"
-        payload = {
-            "candidate_id": candidate_id,
-            "status": "completed",
-            "video_url": video_url
-        }
-        res = supabase.table("general_video_interviews").upsert(payload).execute()
-        if res.error:
-            raise Exception(res.error)
-        return {"status": "uploaded", "video_url": video_url}
+        # This endpoint temporarily accepts both general video uploads as form-data
+        # and job-specific response uploads; route by presence of application_id/question_id.
+        contents = await video.read()
+        # For demo, store fake URL; in production use storage and signed URLs
+        video_url = f"https://your-storage/{candidate_id}/{application_id or 'general'}/{question_id or video.filename}"
+
+        if application_id and question_id:
+            # Save as a video response row
+            payload = {
+                "application_id": application_id,
+                "question_id": question_id,
+                "video_url": video_url,
+                "status": "completed",
+            }
+            res = supabase.table("video_responses").upsert(payload).execute()
+            if res.error:
+                raise Exception(res.error)
+            return {"status": "uploaded", "video_url": video_url}
+        else:
+            # Treat as general video; keep legacy for compatibility
+            payload = {
+                "candidate_id": candidate_id,
+                "status": "completed",
+                "video_url": video_url
+            }
+            res = supabase.table("general_video_interviews").upsert(payload).execute()
+            if res.error:
+                raise Exception(res.error)
+            return {"status": "uploaded", "video_url": video_url}
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to upload general video")
 

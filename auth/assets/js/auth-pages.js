@@ -1,16 +1,14 @@
 // Auth Pages Logic - Skreenit Edition
 import { supabase, auth, db, storage } from './supabase-config.js'
 
-// Resend integration note:
-// Resend should be used server-side only. Do not expose API keys in the browser.
-// These stubs are kept to avoid runtime errors where initEmail() was called.
+// Resend integration note: use Resend on the server only. Do not expose API keys in the client.
 function emailEnabled() {
   // Always false on client; email is sent by backend using Resend.
   return false
 }
 
 function initEmail() {
-  // No-op. If needed, ensure backend endpoints handle email via Resend.
+  // No-op. Backend endpoints should handle email via Resend.
   return
 }
 
@@ -43,92 +41,89 @@ function setLoading(btn, loading) {
 
 // ---- Registration ----
 export async function handleRegistrationSubmit(e) {
-  e.preventDefault();
+  e.preventDefault()
   // initEmail removed: Resend is handled server-side.
 
-  const form = e.currentTarget;
-  const submitBtn = form.querySelector('button[type="submit"]');
-  setLoading(submitBtn, true);
+  const form = e.currentTarget
+  const submitBtn = form.querySelector('button[type="submit"]')
+  setLoading(submitBtn, true)
 
   try {
-    const full_name = getFormValue(form, 'full_name');
-    const email = getFormValue(form, 'email');
-    const mobile = getFormValue(form, 'mobile');
-    const location = getFormValue(form, 'location');
-    const role = getFormValue(form, 'role');
-    const company_id = getFormValue(form, 'company_id');
-    const resumeFile = getFile(form, 'resume');
+    const full_name = getFormValue(form, 'full_name')
+    const email = getFormValue(form, 'email')
+    const mobile = getFormValue(form, 'mobile')
+    const location = getFormValue(form, 'location')
+    const role = getFormValue(form, 'role')
+    const company_id = getFormValue(form, 'company_id')
+    const resumeFile = getFile(form, 'resume')
 
     if (!full_name || !email || !mobile || !location || !role) {
-      showError('Please fill all required fields');
-      return false;
+      showError('Please fill all required fields')
+      return
     }
-
     if (role === 'recruiter' && !company_id) {
-      showError('Company ID is required for recruiter registration');
-      return false;
+      showError('Company ID is required for recruiter registration')
+      return
     }
 
-    const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com';
-    const fd = new FormData();
-    fd.append('full_name', full_name);
-    fd.append('email', email);
-    fd.append('mobile', mobile);
-    fd.append('location', location);
-    fd.append('role', role);
-    if (company_id) fd.append('company_id', company_id);
-    if (resumeFile) fd.append('resume', resumeFile);
+    // Prefer backend registration so we can use service role and send email.
+    const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com'
+    const fd = new FormData()
+    fd.append('full_name', full_name)
+    fd.append('email', email)
+    fd.append('mobile', mobile)
+    fd.append('location', location)
+    fd.append('role', role)
+    if (company_id) fd.append('company_id', company_id)
+    if (resumeFile) fd.append('resume', resumeFile)
 
-    let backendOk = false;
-
+    let backendOk = false
     try {
       const resp = await fetch(`${BACKEND_URL}/auth/register`, {
         method: 'POST',
         body: fd,
-      });
-
+        // CORS handled by backend; no credentials needed
+      })
       if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(`Backend error ${resp.status}: ${text}`);
+        const text = await resp.text()
+        throw new Error(`Backend error ${resp.status}: ${text}`)
       }
-
-      backendOk = true;
-      // Let page handle thank-you display and redirect
-      return true;
+      const data = await resp.json().catch(() => ({}))
+      backendOk = true
+      // Let page handle thank-you and redirect
+      return true
     } catch (be) {
-      console.warn('Backend register failed, falling back to client-side:', be);
+      console.warn('Backend register failed, falling back to client-side:', be)
     }
 
     if (!backendOk) {
-      const tempPassword = generateTempPassword(12);
+      // Fallback: client-side sign up (no email, RLS might block DB insert)
+      const tempPassword = generateTempPassword(12)
       const { data: signUpRes, error: signUpError } = await supabase.auth.signUp({
         email,
         password: tempPassword,
-        options: {
-          data: { full_name, mobile, location, role, first_login: true }
-        }
-      });
+        options: { data: { full_name, mobile, location, role, first_login: true } }
+      })
+      if (signUpError) throw signUpError
+      const authUser = signUpRes.user
+      if (!authUser) throw new Error('Sign up failed')
 
-      if (signUpError) throw signUpError;
-
-      const authUser = signUpRes.user;
-      if (!authUser) throw new Error('Sign up failed');
-
+      // Optional file upload (may fail if bucket policies are strict)
       if (role === 'candidate' && resumeFile) {
-        const path = `${authUser.id}/${Date.now()}-${resumeFile.name}`;
-        const { error: upErr } = await storage.uploadFile('resumes', path, resumeFile);
-        if (upErr) console.warn('Resume upload failed:', upErr);
+        const path = `${authUser.id}/${Date.now()}-${resumeFile.name}`
+        const { error: upErr } = await storage.uploadFile('resumes', path, resumeFile)
+        if (upErr) console.warn('Resume upload failed:', upErr)
       }
 
-      // Let page handle thank-you display and redirect
-      return true;
+      // Let page handle thank-you and redirect (fallback)
+      return true
     }
   } catch (err) {
-    console.error('Registration error:', err);
-    showError(err.message || 'Registration failed');
-    return false;
+    console.error('Registration error:', err)
+    showError(err.message || 'Registration failed')
+    alert(`Registration failed: ${err.message || 'Unknown error'}`)
   } finally {
-    setLoading(form.querySelector('button[type="submit"]'), false);
+    setLoading(submitBtn, false)
   }
 }
 
@@ -153,7 +148,7 @@ export async function handleLoginSubmit(e) {
     localStorage.setItem('skreenit_role', role)
     localStorage.setItem('skreenit_user_id', user.id)
 
-    // Persist access token for backend Authorization headers on this subdomain
+    // Persist access token for backend Authorization headers (used by other pages)
     try {
       const { data: sessionData } = await supabase.auth.getSession()
       const token = sessionData?.session?.access_token
@@ -210,21 +205,6 @@ export async function handleUpdatePasswordSubmit(e) {
     if (upErr) throw upErr
 
     await supabase.auth.updateUser({ data: { first_login: false } })
-
-    // Notify backend to send password-changed email via Resend (best-effort)
-    try {
-      const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com'
-      await fetch(`${BACKEND_URL}/auth/password-changed`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: user.email,
-          full_name: user.user_metadata?.full_name || null,
-        }),
-      })
-    } catch (notifyErr) {
-      console.warn('Password-changed notification failed:', notifyErr)
-    }
 
     alert('Password Changed. Please login with New Password')
     window.location.href = 'https://login.skreenit.com/'
