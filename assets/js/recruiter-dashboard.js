@@ -63,6 +63,19 @@ function renderOverview() {
         </form>
         <div id="questionsList" style="margin-top:.5rem;"></div>
       </div>
+
+      <div class="card" style="background:#fff;border-radius:12px;padding:1rem;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:1rem;">
+        <h3 style="margin-top:0;display:flex;align-items:center;gap:.5rem;"><i class="fas fa-video"></i> Candidate General Video & Scores</h3>
+        <form id="viewGeneralVideoForm" style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
+          <input type="text" id="candidateIdInput" placeholder="Candidate ID" required style="flex:1;min-width:260px;" />
+          <button type="submit" class="btn btn-secondary">Load General Video</button>
+        </form>
+        <div id="generalVideoResult" style="display:none">
+          <div id="generalVideoScores" style="margin:.5rem 0"></div>
+          <video id="generalVideoPlayer" controls style="max-width:100%;height:auto"></video>
+        </div>
+        <div id="generalVideoEmpty" style="color:#718096">Enter a Candidate ID to load general video and analysis.</div>
+      </div>
     </section>
   `)
 
@@ -148,6 +161,39 @@ function renderOverview() {
       listEl.innerHTML = '<ol>' + (data.questions || []).map(q => `<li>${q.question_text}</li>`).join('') + '</ol>'
     } catch (err) {
       listEl.textContent = 'Failed to load questions'
+    }
+  })
+
+  // Load candidate general video + scores
+  node.querySelector('#viewGeneralVideoForm').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const candidateId = node.querySelector('#candidateIdInput').value.trim()
+    if (!candidateId) return
+    const out = node.querySelector('#generalVideoResult')
+    const empty = node.querySelector('#generalVideoEmpty')
+    const vid = node.querySelector('#generalVideoPlayer')
+    const scoresDiv = node.querySelector('#generalVideoScores')
+    try {
+      const token = localStorage.getItem('skreenit_token')
+      const resp = await fetch(`${BACKEND_URL}/applicant/general-video/${candidateId}`, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+      })
+      const data = await resp.json()
+      if (!resp.ok) throw new Error(data?.detail || 'Failed')
+      empty.style.display = 'none'
+      out.style.display = 'block'
+      vid.src = data.video_url || ''
+      scoresDiv.innerHTML = data.scores ? (
+        `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem;">
+          ${Object.entries(data.scores).map(([k,v]) => `<div class=\"stat-card\"><div class=\"stat-info\"><span class=\"stat-number\">${v}</span><span class=\"stat-label\">${k}</span></div></div>`).join('')}
+        </div>`
+      ) : '<em>No scores available</em>'
+    } catch (e) {
+      out.style.display = 'none'
+      empty.style.display = 'block'
+      empty.textContent = 'Failed to load general video'
     }
   })
 

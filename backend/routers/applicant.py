@@ -36,7 +36,35 @@ def require_candidate(authorization: str | None = Header(default=None)) -> AuthU
 @router.post("/apply")
 def apply_job(payload: ApplicationRequest, user: AuthUser = Depends(require_candidate)):
     try:
-        res = supabase.table("job_applications").insert(payload.dict()).execute()
+        # Enforce candidate_id from auth token to prevent spoofing
+        data = payload.dict()
+        data["candidate_id"] = user.id
+
+        # Attach general-interview-video context (scores) and set initial status
+        video_info = None
+        try:
+            video_info = applicant_service.get_general_video(user.id)
+        except Exception:
+            video_info = None
+
+        # Default status as submitted; if no general video, mark as video_pending
+        desired_status = data.get("status") or "submitted"
+        if not video_info or (video_info and video_info.get("status") == "missing"):
+            desired_status = "video_pending"
+
+        # Merge AI analysis with general video scores if available
+        ai_analysis = data.get("ai_analysis") or {}
+        if video_info and video_info.get("scores"):
+            ai_analysis = {**ai_analysis, "general_video_scores": video_info.get("scores")}
+
+        # Prepare final insert payload
+        insert_payload = {
+            **data,
+            "status": desired_status,
+            "ai_analysis": ai_analysis or None,
+        }
+
+        res = supabase.table("job_applications").insert(insert_payload).execute()
         if res.error:
             raise Exception(res.error)
         return {"status": "applied", "data": res.data}
