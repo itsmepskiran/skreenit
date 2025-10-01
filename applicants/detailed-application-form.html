@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="https://auth.skreenit.com/assets/css/application-form-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .checkbox-group { display: flex; align-items: center; gap: .5rem; }
+    .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; }
+  </style>
 </head>
 <body>
     <a href="https://skreenit.com" style="position:fixed;left:16px;top:16px;z-index:10;display:inline-block;">
@@ -73,7 +77,7 @@
                     <h3>Basic Details</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="firstName">First Name *</nlabel>
+                            <label for="firstName">First Name *</label>
                             <input type="text" id="firstName" name="firstName" required>
                         </div>
                         <div class="form-group">
@@ -146,11 +150,27 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="city">City *</label>
-                            <input type="text" id="city" name="city" required>
+                            <input list="cityList" id="city" name="city" required>
+                            <datalist id="cityList">
+                              <option value="Mumbai"></option>
+                              <option value="Bengaluru"></option>
+                              <option value="Delhi"></option>
+                              <option value="Hyderabad"></option>
+                              <option value="Chennai"></option>
+                              <option value="Pune"></option>
+                            </datalist>
                         </div>
                         <div class="form-group">
                             <label for="state">State/Province *</label>
-                            <input type="text" id="state" name="state" required>
+                            <input list="stateList" id="state" name="state" required>
+                            <datalist id="stateList">
+                              <option value="Maharashtra"></option>
+                              <option value="Karnataka"></option>
+                              <option value="Delhi"></option>
+                              <option value="Telangana"></option>
+                              <option value="Tamil Nadu"></option>
+                              <option value="Uttar Pradesh"></option>
+                            </datalist>
                         </div>
                         <div class="form-group">
                             <label for="zipCode">ZIP/Postal Code *</label>
@@ -158,7 +178,15 @@
                         </div>
                         <div class="form-group">
                             <label for="country">Country *</label>
-                            <input type="text" id="country" name="country" required>
+                            <input list="countryList" id="country" name="country" required>
+                            <datalist id="countryList">
+                              <option value="India"></option>
+                              <option value="United States"></option>
+                              <option value="United Kingdom"></option>
+                              <option value="Canada"></option>
+                              <option value="Australia"></option>
+                              <option value="Singapore"></option>
+                            </datalist>
                         </div>
                     </div>
                     <div class="form-group checkbox-group">
@@ -387,33 +415,225 @@
         </div>
     </div>
 
-    <script type="module" src="https://auth.skreenit.com/assets/js/application-form.js"></script>
     <script>
+    // Bootstrap tokens and user info from URL hash across subdomains
+    (function () {
+      try {
+        const hash = window.location.hash ? window.location.hash.substring(1) : '';
+        if (!hash) return;
+        const params = new URLSearchParams(hash);
+        const at = params.get('access_token');
+        const rt = params.get('refresh_token');
+        const uid = params.get('user_id');
+        const role = params.get('role');
+        if (at) localStorage.setItem('skreenit_token', at);
+        if (rt) localStorage.setItem('skreenit_refresh_token', rt);
+        if (uid) localStorage.setItem('skreenit_user_id', uid);
+        if (role) localStorage.setItem('skreenit_role', role);
+        // Clean the hash to avoid reprocessing
+        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      } catch {}
+    })();
+  </script>
+  <script type="module">
+    import { supabase } from 'https://auth.skreenit.com/assets/js/supabase-config.js'
+    // Establish Supabase session from stored tokens if available
+    (async () => {
+      try {
+        const at = localStorage.getItem('skreenit_token')
+        const rt = localStorage.getItem('skreenit_refresh_token')
+        if (at && rt) {
+          await supabase.auth.setSession({ access_token: at, refresh_token: rt })
+        }
+      } catch (e) {
+        console.warn('Failed to set Supabase session', e)
+      }
+    })()
+  </script>
+  <script type="module">
+    // Early email prefill from Supabase user if possible (before other modules run)
+    import { supabase } from 'https://auth.skreenit.com/assets/js/supabase-config.js'
+    (async () => {
+      try {
+        const emailEl = document.getElementById('email')
+        if (!emailEl) return
+        const { data } = await supabase.auth.getUser()
+        const u = data?.user
+        if (u?.email && !emailEl.value) emailEl.value = u.email
+      } catch {}
+    })()
+  </script>
+  <script type="module" src="https://auth.skreenit.com/assets/js/application-form.js"></script>
+  <script type="module">
+      import { supabase } from 'https://auth.skreenit.com/assets/js/supabase-config.js'
       (async function prefill(){
         try {
           const userId = localStorage.getItem('skreenit_user_id');
-          if (!userId) return;
           const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com';
           const token = localStorage.getItem('skreenit_token');
-          const res = await fetch(`${BACKEND_URL}/applicant/detailed-form/${userId}`, {
-            headers: {
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          // Backend prefill
+          try {
+            const res = await fetch(`${BACKEND_URL}/applicant/detailed-form/${userId}`, {
+              headers: {
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+              }
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const p = data.profile || {};
+              if (p.email) document.getElementById('email').value = p.email;
+              if (p.phone) document.getElementById('phone').value = p.phone;
+              if (p.first_name) document.getElementById('firstName').value = p.first_name;
+              if (p.last_name) document.getElementById('lastName').value = p.last_name;
+              if (p.city) document.getElementById('city').value = p.city;
+              if (p.state) document.getElementById('state').value = p.state;
+              if (p.country) document.getElementById('country').value = p.country;
             }
-          });
-          if (!res.ok) return;
-          const data = await res.json();
-          const p = data.profile || {};
-          if (p.email) document.getElementById('email').value = p.email;
-          if (p.phone) document.getElementById('phone').value = p.phone;
-          if (p.first_name) document.getElementById('firstName').value = p.first_name;
-          if (p.last_name) document.getElementById('lastName').value = p.last_name;
-          if (p.city) document.getElementById('city').value = p.city;
-          if (p.state) document.getElementById('state').value = p.state;
-          if (p.country) document.getElementById('country').value = p.country;
+          } catch {}
+
+          // Ensure email is shown from Supabase if backend didn't return it
+          const emailEl = document.getElementById('email')
+          if (emailEl && !emailEl.value) {
+            try {
+              const { data } = await supabase.auth.getUser()
+              const u = data?.user
+              if (u?.email) emailEl.value = u.email
+            } catch {}
+          }
         } catch (e) {
           console.warn('Prefill failed', e);
         }
       })();
+
+      // Same as permanent address behavior
+      (function addressSync(){
+        const cb = document.getElementById('sameAsPermanent')
+        const current = document.getElementById('currentAddress')
+        const perm = document.getElementById('permanentAddress')
+        if (!cb || !current || !perm) return
+        function applySync(){
+          if (cb.checked) {
+            perm.value = current.value
+            perm.setAttribute('readonly', 'readonly')
+          } else {
+            perm.removeAttribute('readonly')
+          }
+        }
+        cb.addEventListener('change', applySync)
+        current.addEventListener('input', () => { if (cb.checked) perm.value = current.value })
+        applySync()
+      })()
+
+      // Dynamic Country -> State -> City using countriesnow.space API with client-side caching
+      (function dynamicLocation(){
+        const countryInput = document.getElementById('country')
+        const stateInput = document.getElementById('state')
+        const cityInput = document.getElementById('city')
+        const countryList = document.getElementById('countryList')
+        const stateList = document.getElementById('stateList')
+        const cityList = document.getElementById('cityList')
+        if (!countryInput || !stateInput || !cityInput) return
+
+        const API_BASE = 'https://countriesnow.space/api/v0.1'
+        const TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
+        function setOptions(listEl, items) {
+          if (!listEl) return
+          listEl.innerHTML = (items || []).map(v => `<option value="${(v||'').toString().replaceAll('"','&quot;')}"></option>`).join('')
+        }
+
+        function getCache(key) {
+          try {
+            const raw = localStorage.getItem(key)
+            if (!raw) return null
+            const obj = JSON.parse(raw)
+            if (!obj || !obj.t || (Date.now() - obj.t) > TTL_MS) return null
+            return obj.v
+          } catch { return null }
+        }
+
+        function setCache(key, value) {
+          try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), v: value })) } catch {}
+        }
+
+        async function fetchCountries() {
+          const cacheKey = 'cn_countries_names'
+          const cached = getCache(cacheKey)
+          if (cached) return cached
+          const res = await fetch(`${API_BASE}/countries/`)
+          const js = await res.json().catch(() => null)
+          const arr = js?.data?.map?.(x => x.country).filter(Boolean) || []
+          setCache(cacheKey, arr)
+          return arr
+        }
+
+        async function fetchStates(country) {
+          const cacheKey = `cn_states_${country}`
+          const cached = getCache(cacheKey)
+          if (cached) return cached
+          const res = await fetch(`${API_BASE}/countries/states`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ country })
+          })
+          const js = await res.json().catch(() => null)
+          const arr = js?.data?.states?.map?.(s => s.name).filter(Boolean) || []
+          setCache(cacheKey, arr)
+          return arr
+        }
+
+        async function fetchCities(country, state) {
+          const cacheKey = `cn_cities_${country}_${state}`
+          const cached = getCache(cacheKey)
+          if (cached) return cached
+          const res = await fetch(`${API_BASE}/countries/state/cities`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ country, state })
+          })
+          const js = await res.json().catch(() => null)
+          const arr = js?.data || []
+          setCache(cacheKey, arr)
+          return arr
+        }
+
+        // Initialize countries
+        fetchCountries().then(countries => setOptions(countryList, countries)).catch(() => {})
+
+        async function onCountryChange(){
+          const c = countryInput.value
+          const states = c ? await fetchStates(c).catch(() => []) : []
+          setOptions(stateList, states)
+          if (!states.includes(stateInput.value)) stateInput.value = ''
+          setOptions(cityList, [])
+          cityInput.value = ''
+        }
+
+        async function onStateChange(){
+          const c = countryInput.value
+          const s = stateInput.value
+          const cities = (c && s) ? await fetchCities(c, s).catch(() => []) : []
+          setOptions(cityList, cities)
+          if (!(cities || []).includes(cityInput.value)) cityInput.value = ''
+        }
+
+        countryInput.addEventListener('change', () => { onCountryChange() })
+        stateInput.addEventListener('change', () => { onStateChange() })
+
+        // Prime dependent lists if values present from prefill
+        ;(async () => { await onCountryChange(); await onStateChange() })()
+      })()
+    </script>
+    <!-- Final fallback to ensure email field is populated -->
+    <script type="module">
+      import { supabase } from 'https://auth.skreenit.com/assets/js/supabase-config.js'
+      window.addEventListener('DOMContentLoaded', async () => {
+        try {
+          const emailEl = document.getElementById('email')
+          if (!emailEl || emailEl.value) return
+          const { data } = await supabase.auth.getUser()
+          const u = data?.user
+          if (u?.email) emailEl.value = u.email
+        } catch (e) { console.warn('Email prefill fallback failed', e) }
+      })
     </script>
 </body>
 </html>

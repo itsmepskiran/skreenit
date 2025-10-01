@@ -67,6 +67,40 @@
   </div>
 
   <script>
+    // Bootstrap tokens and user info from URL hash across subdomains
+    (function () {
+      try {
+        const hash = window.location.hash ? window.location.hash.substring(1) : '';
+        if (!hash) return;
+        const params = new URLSearchParams(hash);
+        const at = params.get('access_token');
+        const rt = params.get('refresh_token');
+        const uid = params.get('user_id');
+        const role = params.get('role');
+        if (at) localStorage.setItem('skreenit_token', at);
+        if (rt) localStorage.setItem('skreenit_refresh_token', rt);
+        if (uid) localStorage.setItem('skreenit_user_id', uid);
+        if (role) localStorage.setItem('skreenit_role', role);
+        // Clean the hash to avoid reprocessing
+        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      } catch {}
+    })();
+  </script>
+  <script type="module">
+    import { supabase } from 'https://auth.skreenit.com/assets/js/supabase-config.js'
+    (async () => {
+      try {
+        const at = localStorage.getItem('skreenit_token')
+        const rt = localStorage.getItem('skreenit_refresh_token')
+        if (at && rt) {
+          await supabase.auth.setSession({ access_token: at, refresh_token: rt })
+        }
+      } catch (e) {
+        console.warn('Failed to set Supabase session', e)
+      }
+    })()
+  </script>
+  <script>
     window.SKREENIT_BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com';
     const form = document.getElementById('recruiterProfileForm');
     form.addEventListener('submit', async function(e) {
@@ -74,7 +108,7 @@
       const userId = localStorage.getItem('skreenit_user_id');
       if (!userId) {
         alert('Not logged in. Please login again.');
-        window.location.href = 'https://auth.skreenit.com/login.html';
+        window.location.href = 'https://login.skreenit.com/login.html';
         return;
       }
 

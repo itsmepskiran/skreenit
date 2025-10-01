@@ -27,8 +27,29 @@ function updateUI() {
   if (progressFill) progressFill.style.width = `${Math.round(((currentStep-1)/(totalSteps-1))*100)}%`
 }
 
+function validateCurrentStep() {
+  const stepEl = document.querySelector(`.form-step[data-step="${currentStep}"]`)
+  if (!stepEl) return true
+  const required = stepEl.querySelectorAll('[required]')
+  for (const input of Array.from(required)) {
+    if (input.type === 'checkbox' || input.type === 'radio') {
+      if (!input.checked) { input.focus(); return false }
+    } else if (!String(input.value || '').trim()) {
+      input.focus();
+      return false
+    }
+  }
+  return true
+}
+
 prevBtn?.addEventListener('click', () => { if (currentStep>1) { currentStep--; updateUI() } })
-nextBtn?.addEventListener('click', () => { if (currentStep<totalSteps) { currentStep++; updateUI() } })
+nextBtn?.addEventListener('click', () => {
+  if (currentStep < totalSteps) {
+    if (!validateCurrentStep()) return
+    currentStep++
+    updateUI()
+  }
+})
 
 form?.addEventListener('submit', async (e) => {
   e.preventDefault()
@@ -143,13 +164,36 @@ form?.addEventListener('submit', async (e) => {
 // Save draft/logout placeholders
 const saveDraftBtn = document.getElementById('saveDraftBtn')
 const logoutBtn = document.getElementById('logoutBtn')
-saveDraftBtn?.addEventListener('click', () => {
-  // Placeholder: persist draft via API/localStorage if needed
-  alert('Draft saved (placeholder).')
-  // Stay on the same page
+saveDraftBtn?.addEventListener('click', async () => {
+  try {
+    const userId = localStorage.getItem('skreenit_user_id') || 'anonymous'
+    // Collect minimal draft snapshot
+    const draft = {
+      ts: Date.now(),
+      step: currentStep,
+      profile: {
+        email: document.getElementById('email')?.value || null,
+        phone: document.getElementById('phone')?.value || null,
+        first_name: document.getElementById('firstName')?.value || null,
+        last_name: document.getElementById('lastName')?.value || null,
+        city: document.getElementById('city')?.value || null,
+        state: document.getElementById('state')?.value || null,
+        country: document.getElementById('country')?.value || null,
+      }
+    }
+    localStorage.setItem(`skreenit_draft_${userId}`, JSON.stringify(draft))
+    // Optional: send to backend if supported
+    const token = localStorage.getItem('skreenit_token')
+    fetch(`${BACKEND_URL}/applicant/detailed-form`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ candidate_id: userId, draft: true, ...draft })
+    }).catch(()=>{})
+    alert('Draft saved.')
+  } catch { alert('Could not save draft locally.') }
 })
 logoutBtn?.addEventListener('click', () => {
-  window.location.href = 'https://login.skreenit.com/'
+  window.location.href = 'https://login.skreenit.com/login.html'
 })
 
 updateUI()

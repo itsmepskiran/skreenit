@@ -12,20 +12,53 @@
   </a>
   <div style="max-width:720px;margin:6rem auto;background:#fff;padding:2rem;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,0.1);">
     <h2>Redirecting to your dashboard...</h2>
-    <p>If you are not redirected automatically, please <a href="https://auth.skreenit.com/login.html">login</a>.</p>
+    <p>If you are not redirected automatically, please <a href="https://login.skreenit.com/login.html">login</a>.</p>
   </div>
+  <script>
+    // Bootstrap tokens and user info from URL hash across subdomains BEFORE module import
+    (function () {
+      try {
+        const hash = window.location.hash ? window.location.hash.substring(1) : '';
+        if (!hash) return;
+        const params = new URLSearchParams(hash);
+        const at = params.get('access_token');
+        const rt = params.get('refresh_token');
+        const uid = params.get('user_id');
+        const role = params.get('role');
+        if (at) localStorage.setItem('skreenit_token', at);
+        if (rt) localStorage.setItem('skreenit_refresh_token', rt);
+        if (uid) localStorage.setItem('skreenit_user_id', uid);
+        if (role) localStorage.setItem('skreenit_role', role);
+        // Clean the hash to avoid reprocessing
+        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      } catch {}
+    })();
+  </script>
   <script type="module">
     import { supabase } from 'https://auth.skreenit.com/assets/js/supabase-config.js'
     (async () => {
-      const { data, error } = await supabase.auth.getUser()
-      if (error || !data?.user) {
-        window.location.href = 'https://auth.skreenit.com/login.html'
-        return
-      }
-      const role = data.user.user_metadata?.role
-      if (role === 'candidate') window.location.href = '/candidate-dashboard.html'
-      else if (role === 'recruiter') window.location.href = '/recruiter-dashboard.html'
-      else window.location.href = 'https://auth.skreenit.com/login.html'
+      try {
+        // If tokens were passed via hash and saved, establish session before checking user
+        try {
+          const at = localStorage.getItem('skreenit_token')
+          const rt = localStorage.getItem('skreenit_refresh_token')
+          if (at && rt) {
+            await supabase.auth.setSession({ access_token: at, refresh_token: rt })
+          }
+        } catch {}
+
+        const { data, error } = await supabase.auth.getUser()
+        if (!error && data?.user) {
+          const role = data.user.user_metadata?.role || localStorage.getItem('skreenit_role')
+          if (role === 'candidate') { window.location.href = 'candidate-dashboard.html'; return }
+          if (role === 'recruiter') { window.location.href = 'recruiter-dashboard.html'; return }
+        }
+      } catch {}
+      // Fallback: use localStorage role if available
+      const roleLS = localStorage.getItem('skreenit_role')
+      if (roleLS === 'candidate') window.location.href = 'candidate-dashboard.html'
+      else if (roleLS === 'recruiter') window.location.href = 'recruiter-dashboard.html'
+      else window.location.href = 'https://login.skreenit.com/login.html'
     })()
   </script>
 </body>

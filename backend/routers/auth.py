@@ -1,37 +1,18 @@
-from fastapi import APIRouter, Request, HTTPException, Header, Form, UploadFile, File
+from fastapi import APIRouter, Request, HTTPException, Form, UploadFile, File
 from fastapi.responses import JSONResponse
-import os, httpx
+import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
-from models.auth_models import LoginRequest, PasswordChangedRequest
+from models.auth_models import LoginRequest
 from services.auth_service import AuthService
+from typing import Optional
 
 load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 router = APIRouter(tags=["auth"])
 auth_service = AuthService(supabase)
-
-@router.post("/login")
-def login(payload: LoginRequest):
-    try:
-        return auth_service.login(payload.email, payload.password)
-    except Exception as e:
-        msg = str(e)
-        # Normalize common Supabase auth error into 401 for the client
-        if "Invalid login credentials" in msg or "invalid login credentials" in msg:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        raise HTTPException(status_code=500, detail=msg)
-
-@router.post("/validate")
-def validate_token(authorization: str = Header(..., convert_underscores=False)):
-    try:
-        token = authorization.replace("Bearer ", "")
-        return auth_service.validate_token(token)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 @router.post("/register")
 async def register(
@@ -40,8 +21,9 @@ async def register(
     mobile: str = Form(...),
     location: str = Form(...),
     role: str = Form(...),
-    company_id: str | None = Form(None),
-    resume: UploadFile | None = File(None),
+    company_id: str = Form(None),
+    company_name: str = Form(None),
+    resume: UploadFile = File(None)
 ):
     try:
         resume_bytes = await resume.read() if resume is not None else None
@@ -52,22 +34,54 @@ async def register(
             location=location,
             role=role,
             company_id=company_id,
+            company_name=company_name,
             resume_bytes=resume_bytes,
-            resume_filename=resume.filename if resume is not None else None,
+            resume_filename=resume.filename if resume is not None else None
         )
-        return result
-    except ValueError as ve:
-        # For duplicate user case
-        if str(ve) == "User already registered":
-            raise HTTPException(status_code=409, detail="User already registered")
-        raise HTTPException(status_code=400, detail=str(ve))
+        return {"ok": True, "data": result}
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return JSONResponse(status_code=400, content={"ok": False, "error": str(e)})
 
-@router.post("/password-changed")
-async def password_changed(payload: PasswordChangedRequest):
+@router.post("/login")
+async def login(request: LoginRequest):
     try:
-        # Prefer provided full_name; otherwise service will fallback
-        return auth_service.notify_password_changed(email=payload.email, full_name=payload.full_name)
+        result = auth_service.login(request.email, request.password)
+        return {"ok": True, "data": result}
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return JSONResponse(status_code=401, content={"ok": False, "error": str(e)})
+
+@router.post("/password-updated")
+async def password_updated(request: Request):
+    try:
+        # Validate bearer token and get user info
+        auth_header: Optional[str] = request.headers.get("authorization")
+        if not auth_header or not auth_header.lower().startswith("bearer "):
+            return JSONResponse(status_code=401, content={"ok": False, "error": "Missing Authorization header"})
+        token = auth_header.split(" ", 1)[1]
+        user_info = auth_service.validate_token(token)
+        user = user_info.get("user") or {}
+        email = user.get("email")
+        metadata = user.get("user_metadata") or {}
+        role = metadata.get("role")
+        full_name = metadata.get("full_name") or None
+
+        # Always send password changed notification
+        try:
+            _ = auth_service.notify_password_changed(email=email, full_name=full_name)
+        except Exception:
+            pass
+
+        # If recruiter, also send company name and ID
+        if role == "recruiter":
+            try:
+                company = auth_service.get_recruiter_company_info(user.get("id"))
+                cid = company.get("company_id")
+                cname = company.get("company_name")
+                if cid:
+                    _ = auth_service.send_recruiter_company_email(email=email, full_name=full_name, company_id=cid, company_name=cname)
+            except Exception:
+                pass
+
+        return {"ok": True}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})

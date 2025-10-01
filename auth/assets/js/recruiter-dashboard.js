@@ -3,18 +3,39 @@ import { supabase } from './supabase-config.js'
 const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com'
 let currentUser = null
 
+// Bootstrap session from URL fragment (access_token/refresh_token) if present, and persist basic info
+(async function bootstrapSessionFromHash() {
+  try {
+    const hash = window.location.hash ? window.location.hash.substring(1) : ''
+    if (!hash) return
+    const params = new URLSearchParams(hash)
+    const at = params.get('access_token')
+    const rt = params.get('refresh_token')
+    const uid = params.get('user_id')
+    const role = params.get('role')
+    if (uid) localStorage.setItem('skreenit_user_id', uid)
+    if (role) localStorage.setItem('skreenit_role', role)
+    if (at) localStorage.setItem('skreenit_token', at)
+    if (at && rt) {
+      try { await supabase.auth.setSession({ access_token: at, refresh_token: rt }) } catch {}
+    }
+    // Clean hash to avoid reprocessing on reload
+    history.replaceState(null, document.title, window.location.pathname + window.location.search)
+  } catch {}
+})()
+
 function qs(sel) { return document.querySelector(sel) }
 function el(html) { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild }
 
 async function checkAuth() {
   const { data, error } = await supabase.auth.getUser()
   if (error || !data?.user) {
-    window.location.href = 'https://login.skreenit.com/'
+    window.location.href = 'https://login.skreenit.com/login.html'
     throw new Error('Not authenticated')
   }
   const user = data.user
   if (user?.user_metadata?.role !== 'recruiter') {
-    window.location.href = 'https://login.skreenit.com/'
+    window.location.href = 'https://login.skreenit.com/login.html'
     throw new Error('Wrong role')
   }
   currentUser = user
@@ -22,6 +43,13 @@ async function checkAuth() {
   localStorage.setItem('skreenit_role', 'recruiter')
   const nameEl = document.querySelector('.user-name')
   if (nameEl) nameEl.textContent = user.user_metadata?.full_name || 'Recruiter'
+
+  // Persist access token for Authorization headers on this subdomain
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData?.session?.access_token
+    if (token) localStorage.setItem('skreenit_token', token)
+  } catch {}
 }
 
 function mountContent(node) {
@@ -31,11 +59,24 @@ function mountContent(node) {
   main.appendChild(node)
 }
 
+function setActiveNav(hash) {
+  const items = document.querySelectorAll('.nav-menu .nav-item')
+  items.forEach(li => {
+    const section = li.getAttribute('data-section')
+    if ('#' + section === hash) li.classList.add('active')
+    else li.classList.remove('active')
+  })
+}
+
 function renderOverview() {
   const node = el(`
     <section id="overviewSection" class="dashboard-section">
-      <div class="section-header">
-        <h1>Dashboard Overview</h1>
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;">
+        <h1 style="margin:0;">Dashboard Overview</h1>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+          <a class="btn btn-secondary" href="https://recruiter.skreenit.com/recruiter-profile.html">Edit/Update Profile</a>
+          <button class="btn btn-primary"><i class="fas fa-plus"></i> Create Job</button>
+        </div>
       </div>
       <div class="card" style="background:#fff;border-radius:12px;padding:1rem;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:1rem;">
         <h3 style="margin-top:0;display:flex;align-items:center;gap:.5rem;"><i class="fas fa-check"></i> Approve Application</h3>
@@ -200,4 +241,89 @@ function renderOverview() {
   mountContent(node)
 }
 
-checkAuth().then(renderOverview)
+function renderJobs() {
+  const node = el(`
+    <section class="dashboard-section">
+      <div class="section-header"><h1>Jobs</h1><button class="btn btn-primary"><i class="fas fa-plus"></i> Create Job</button></div>
+      <div id="jobsHost" class="card" style="background:#fff;border-radius:12px;padding:1rem;box-shadow:0 2px 10px rgba(0,0,0,.06);">
+        <em>Jobs listing will appear here.</em>
+      </div>
+    </section>
+  `)
+  mountContent(node)
+}
+
+function renderCandidates() {
+  const node = el(`
+    <section class="dashboard-section">
+      <div class="section-header"><h1>Candidates</h1></div>
+      <div id="candsHost" class="card" style="background:#fff;border-radius:12px;padding:1rem;box-shadow:0 2px 10px rgba(0,0,0,.06);">
+        <em>Applicants and their statuses will appear here.</em>
+      </div>
+    </section>
+  `)
+  mountContent(node)
+}
+
+function renderAnalytics() {
+  const node = el(`
+    <section class="dashboard-section">
+      <div class="section-header"><h1>Analytics</h1></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-info"><span class="stat-number">--</span><span class="stat-label">Views</span></div></div>
+        <div class="stat-card"><div class="stat-info"><span class="stat-number">--</span><span class="stat-label">Applications</span></div></div>
+        <div class="stat-card"><div class="stat-info"><span class="stat-number">--</span><span class="stat-label">Shortlisted</span></div></div>
+      </div>
+    </section>
+  `)
+  mountContent(node)
+}
+
+async function render() {
+  const hash = window.location.hash || '#overview'
+  setActiveNav(hash)
+  if (hash === '#jobs') return renderJobs()
+  if (hash === '#candidates') return renderCandidates()
+  if (hash === '#analytics') return renderAnalytics()
+  return renderOverview()
+}
+
+// Sidebar clicks -> change hash
+;(function bindNav(){
+  document.querySelectorAll('.nav-menu .nav-item').forEach(li => {
+    li.addEventListener('click', () => {
+      const section = li.getAttribute('data-section')
+      if (section) window.location.hash = '#' + section
+    })
+  })
+})()
+
+// Logout handler (robust)
+;(function bindLogout(){
+  function doRedirect(){ window.location.href = 'https://login.skreenit.com/login.html' }
+  async function doLogout(){
+    try {
+      try {
+        localStorage.removeItem('skreenit_token')
+        localStorage.removeItem('skreenit_refresh_token')
+        localStorage.removeItem('skreenit_user_id')
+        localStorage.removeItem('skreenit_role')
+      } catch {}
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((resolve) => setTimeout(resolve, 1500))
+      ])
+    } catch {}
+    doRedirect()
+  }
+  const btn = document.getElementById('logoutBtn')
+  if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); doLogout() })
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest && e.target.closest('#logoutBtn')
+    if (t) { e.preventDefault(); doLogout() }
+  })
+})()
+
+window.addEventListener('hashchange', render)
+
+checkAuth().then(render)

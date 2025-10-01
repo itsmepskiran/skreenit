@@ -16,11 +16,11 @@ class VideoResponseRequest(BaseModel):
     duration: Optional[int] = None
     ai_analysis: Optional[Dict] = None
     status: Optional[VideoStatus] = VideoStatus.not_started
-    recorded_at: Optional[str] = None  # ISO datetime
+    recorded_at: Optional[str] = None  # ISO datetime string
 
 class GeneralVideoInterviewRequest(BaseModel):
     candidate_id: str
     status: VideoStatus = VideoStatus.not_started
     video_url: Optional[str] = None
     ai_analysis: Optional[Dict] = None
-    created_at: Optional[str] = None  # ISO datetime
+    created_at: Optional[str] = None  # ISO datetime string

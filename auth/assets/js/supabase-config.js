@@ -1,9 +1,9 @@
 // Supabase Configuration and Client Setup
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2'
 
-// Replace these with your actual Supabase project credentials
-const SUPABASE_URL = 'https://kokxhrjmlwhtkssqsjuf.supabase.co' // e.g., 'https://your-project.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtva3hocmptbHdodGtzc3FzanVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNjMxNTUsImV4cCI6MjA3MDczOTE1NX0.mB-L3Y9YKFTCiMDtKrsveo_b2mJ0s4RGEoom854TbHA'
+// Read from runtime globals if provided to avoid hardcoding credentials in source
+const SUPABASE_URL = window.SKREENIT_SUPABASE_URL || 'https://gfkbqhniopgcaapolzbu.supabase.co'
+const SUPABASE_ANON_KEY = window.SKREENIT_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdma2JxaG5pb3BnY2FhcG9semJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNTgzMzYsImV4cCI6MjA3MzkzNDMzNn0.BXSTy-KnTUYLDEGbQXWGTtiwMm7UHomIlRW6lW-lCm0'
 
 // Create Supabase client
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)

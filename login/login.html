@@ -27,6 +27,13 @@
     <div class="auth-body">
       <form id="loginForm">
         <div class="form-group">
+          <label for="role">Role*</label>
+          <select id="role" name="role" required>
+            <option value="candidate">Candidate</option>
+            <option value="recruiter">Recruiter</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label for="email">User ID*</label>
           <input type="email" id="email" name="email" required />
         </div>
@@ -34,12 +41,16 @@
           <label for="password">Password*</label>
           <input type="password" id="password" name="password" required />
         </div>
+        <div id="recruiterBox" class="form-group" style="display:none;">
+          <label for="company_id">Company ID*</label>
+          <input type="text" id="company_id" name="company_id" placeholder="Enter your 8-letter Company ID" />
+        </div>
         <div class="modal-footer" style="padding:0; margin-top: 1rem;">
           <button type="submit" class="btn btn-primary">Login</button>
         </div>
         <div class="auth-actions">
           <a href='https://auth.skreenit.com/registration.html'>Create an account</a>
-          <a href='https://auth.skreenit.com/forgot-password.html'>Forgot password?</a>
+          <a href='/login/forgot-password.html'>Forgot password?</a>
         </div>
       </form>
     </div>
@@ -48,6 +59,15 @@
   <script type="module">
     import { handleLoginSubmit } from 'https://auth.skreenit.com/assets/js/auth-pages.js'
     document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit)
+    const roleSel = document.getElementById('role')
+    const recruiterBox = document.getElementById('recruiterBox')
+    function toggleRecruiter() {
+      recruiterBox.style.display = roleSel.value === 'recruiter' ? 'block' : 'none'
+      const cid = document.getElementById('company_id')
+      if (cid) cid.required = roleSel.value === 'recruiter'
+    }
+    roleSel.addEventListener('change', toggleRecruiter)
+    toggleRecruiter()
   </script>
 </body>
 </html>

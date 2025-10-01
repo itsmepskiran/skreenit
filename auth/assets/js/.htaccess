@@ -1,0 +1,62 @@
+# Disable directory listing
+Options -Indexes
+
+# CORS and MIME for JS modules
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|mjs)$">
+    Header set Content-Type "application/javascript; charset=UTF-8"
+    Header set Vary "Origin"
+    Header set Cross-Origin-Resource-Policy "cross-origin"
+  </FilesMatch>
+
+  # Allow JS loads from trusted subdomains
+  SetEnvIf Origin "https://(login|applicant|recruiter|dashboard)\.skreenit\.com$" ORIGIN_OK=$0
+  Header set Access-Control-Allow-Origin "%{Origin_OK}e" env=ORIGIN_OK
+  Header set Access-Control-Allow-Methods "GET, OPTIONS" env=ORIGIN_OK
+  Header set Access-Control-Allow-Headers "Content-Type" env=ORIGIN_OK
+</IfModule>
+
+# Long-term caching for versioned JS
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/javascript        "access plus 1 year"
+</IfModule>
+
+# Strong cache headers
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|mjs)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+# Compression
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE application/javascript text/javascript
+</IfModule>
+
+<IfModule mod_brotli.c>
+  BrotliCompressionQuality 5
+  AddOutputFilterByType BROTLI_COMPRESS application/javascript text/javascript
+</IfModule>
+
+# ETag off
+FileETag None
+<IfModule mod_headers.c>
+  Header unset ETag
+</IfModule>
+
+# Fast response for OPTIONS preflight
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_METHOD} =OPTIONS
+  RewriteRule ^ - [R=204,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Test-Header "mod_headers is working"
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Test-Header "mod_headers is working"
+</IfModule>

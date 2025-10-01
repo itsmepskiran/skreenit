@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Optional, List, Dict
 from enum import Enum
 
 class ApplicationStatus(str, Enum):
@@ -18,7 +18,7 @@ class ApplicationRequest(BaseModel):
     cover_letter: Optional[str] = None
     resume_url: Optional[str] = None
     ai_score: Optional[int] = None
-    ai_analysis: Optional[dict] = None
+    ai_analysis: Optional[Dict] = None
     recruiter_notes: Optional[str] = None
 
 class CandidateProfileRequest(BaseModel):
@@ -39,22 +39,17 @@ class CandidateSkillRequest(BaseModel):
     candidate_id: str
     skill_name: str
     proficiency_level: Optional[str] = None
-    years_experience: Optional[int] = None
-
-class CandidateExperienceRequest(BaseModel):
-    candidate_id: str
-    company_name: str
-    position: str
-    description: Optional[str] = None
-    start_date: Optional[str] = None  # ISO date
-    end_date: Optional[str] = None    # ISO date
-    is_current: Optional[bool] = False
 
 class CandidateEducationRequest(BaseModel):
     candidate_id: str
-    institution: str
     degree: str
-    field_of_study: Optional[str] = None
-    start_date: Optional[str] = None  # ISO date
-    end_date: Optional[str] = None    # ISO date
-    grade: Optional[str] = None
+    institution: str
+    year_completed: Optional[int] = None
+
+class CandidateExperienceRequest(BaseModel):
+    candidate_id: str
+    title: str
+    company: str
+    start_year: int
+    end_year: Optional[int] = None
+    description: Optional[str] = None

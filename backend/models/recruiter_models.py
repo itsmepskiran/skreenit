@@ -23,7 +23,7 @@ class JobPostRequest(BaseModel):
     status: Optional[JobStatus] = JobStatus.draft
     company_id: str
     created_by: str
-    expires_at: Optional[str] = None  # ISO datetime
+    expires_at: Optional[str] = None  # ISO date/time
 
 class JobSkillRequest(BaseModel):
     job_id: str
@@ -45,13 +45,13 @@ class InterviewQuestionRequest(BaseModel):
     job_id: str
     question_text: str
     question_order: int
-    time_limit: Optional[int] = 120
+    time_limit: Optional[int] = 120  # seconds
 
 class RecruiterProfileRequest(BaseModel):
     user_id: str
-    company_name: str
-    contact_name: str
-    contact_email: str
-    company_website: Optional[str] = None
-    location: Optional[str] = None
-    about: Optional[str] = None
+    company_id: Optional[str] = None
+    fullname: str
+    email: str
+    phone: Optional[str] = None
+    position: Optional[str] = None
+    linkedin_url: Optional[str] = None

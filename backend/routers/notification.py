@@ -1,30 +1,26 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from supabase import create_client, Client
 import os
 from models.notification_models import NotificationRequest
 
 router = APIRouter(tags=["notification"])
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+def get_supabase_client() -> Client:
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise RuntimeError("Supabase credentials missing")
+    return create_client(supabase_url, supabase_key)
 
-@router.post("/")
-def create_notification(payload: NotificationRequest):
-    try:
-        res = supabase.table("notifications").insert(payload.dict()).execute()
-        if res.error:
-            raise Exception(res.error)
-        return {"status": "created", "notification": res.data}
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to create notification")
+@router.post("/notify")
+def send_notification(notification: NotificationRequest):
+    client = get_supabase_client()  # always initialize for route
 
-@router.get("/user/{user_id}")
-def list_notifications(user_id: str):
-    try:
-        res = supabase.table("notifications").select("*").eq("user_id", user_id).execute()
-        if res.error:
-            raise Exception(res.error)
-        return {"notifications": res.data}
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to fetch notifications")
+    notif = notification.dict()
+    # Insert notification or handle duplicate logic here!
+    result = client.table("notifications").insert(notif).execute()
+
+    if getattr(result, "error", None):
+        raise HTTPException(status_code=400, detail=f"Notification error: {result.error}")
+
+    return {"ok": True, "notification": result.data}

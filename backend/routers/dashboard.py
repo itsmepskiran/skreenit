@@ -1,36 +1,49 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from supabase import create_client, Client
-import os, httpx
+from typing import Optional
 from models.dashboard_models import DashboardSummary
+import os
 
 router = APIRouter(tags=["dashboard"])
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+# Utility for Supabase client (adjust import as per your project)
+def get_supabase_client() -> Client:
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        raise RuntimeError("Supabase credentials are not set")
+    return create_client(supabase_url, supabase_key)
 
-@router.get("/summary")
-def dashboard_summary(request: Request):
-    token = request.headers.get("authorization", "").replace("Bearer ", "")
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "apikey": SUPABASE_SERVICE_ROLE_KEY
-    }
-    try:
-        user_res = httpx.get(f"{SUPABASE_URL}/auth/v1/user", headers=headers)
-        user_res.raise_for_status()
-        user = user_res.json()
-        role = user.get("user_metadata", {}).get("role")
+@router.get("/summary/{user_id}")
+def get_dashboard_summary(user_id: str, client: Client = Depends(get_supabase_client)):
+    """
+    Provides a dashboard summary highly specific to the user's role.
+    E.g., jobs posted, applications, or relevant analytics.
+    """
+    # This is a sample implementation—you should tailor logic to your needs.
+    user_resp = client.table("users").select("role").eq("id", user_id).single().execute()
+    if getattr(user_resp, "error", None):
+        raise HTTPException(status_code=404, detail="User not found")
+    role = user_resp.data.get("role")
 
-        if role == "recruiter":
-            jobs = supabase.table("jobs").select("*").eq("company_id", user["id"]).execute()
-            return {"role": "recruiter", "jobs": jobs.data}
+    summary = {"role": role, "jobs": [], "applications": []}
 
-        elif role == "candidate":
-            apps = supabase.table("job_applications").select("*").eq("candidate_id", user["id"]).execute()
-            return {"role": "candidate", "applications": apps.data}
+    if role == "recruiter":
+        jobs_resp = client.table("jobs").select("*").eq("created_by", user_id).execute()
+        summary["jobs"] = jobs_resp.data if getattr(jobs_resp, "data", None) else []
 
-        else:
-            return {"role": "unknown"}
-    except Exception:
-        raise HTTPException(status_code=500, detail="Dashboard fetch failed")
+        applications_resp = client.table("job_applications").select("*").in_("job_id", [job["id"] for job in summary["jobs"]]).execute()
+        summary["applications"] = applications_resp.data if getattr(applications_resp, "data", None) else []
+
+    elif role == "candidate":
+        applications_resp = client.table("job_applications").select("*").eq("candidate_id", user_id).execute()
+        summary["applications"] = applications_resp.data if getattr(applications_resp, "data", None) else []
+
+        jobs_applied = [app["job_id"] for app in summary["applications"]]
+        jobs_resp = client.table("jobs").select("*").in_("id", jobs_applied).execute()
+        summary["jobs"] = jobs_resp.data if getattr(jobs_resp, "data", None) else []
+
+    else:
+        raise HTTPException(status_code=400, detail="Unknown user role")
+
+    return DashboardSummary(**summary)
