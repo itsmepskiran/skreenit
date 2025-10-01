@@ -1,0 +1,23 @@
+# Railway configuration for backend-skreenit
+# Docs: https://docs.railway.app/guides/railway-toml
+
+[build]
+# Use Nixpacks for Python. It will auto-detect via requirements.txt at repo root.
+builder = "NIXPACKS"
+
+[deploy]
+# Start FastAPI package from backend/
+startCommand = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+
+[variables]
+# Pin Python major/minor used by Nixpacks
+PYTHON_VERSION = "3.11.x"
+# Leave secrets to Railway environment (set in Dashboard):
+# SUPABASE_URL
+# SUPABASE_SERVICE_ROLE_KEY
+# RESEND_API_KEY
+# EMAIL_FROM
+# FRONTEND_BASE_URL
+# ALLOWED_ORIGINS
