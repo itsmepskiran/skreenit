@@ -3,7 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import (
+from .routers import (
     auth,
     applicant,
     recruiter,
@@ -12,7 +12,7 @@ from routers import (
     notification,
     analytics
 )
-from utils_others.error_handler import register_exception_handlers
+from .utils_others.error_handler import register_exception_handlers
 from supabase import create_client, Client
 
 # Load environment variables

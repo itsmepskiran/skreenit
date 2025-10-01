@@ -3,14 +3,14 @@ from supabase import create_client, Client
 import os, httpx
 from typing import Any, Dict, List, Optional
 
-from models.applicant_models import (
+from ..models.applicant_models import (
     ApplicationRequest,
     CandidateEducationRequest,
     CandidateExperienceRequest,
     CandidateSkillRequest
 )
-from services.applicant_service import ApplicantService
-from utils_others.security import get_user_from_bearer, ensure_role
+from ..services.applicant_service import ApplicantService
+from ..utils_others.security import get_user_from_bearer, ensure_role
 
 router = APIRouter(tags=["applicant"])
 

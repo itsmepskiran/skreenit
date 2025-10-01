@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from supabase import create_client, Client
 from typing import Optional
-from models.dashboard_models import DashboardSummary
+from ..models.dashboard_models import DashboardSummary
 import os
 
 router = APIRouter(tags=["dashboard"])

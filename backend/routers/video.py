@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Header
 from supabase import create_client, Client
 import os
-from models.video_models import VideoResponseRequest, GeneralVideoInterviewRequest
+from ..models.video_models import VideoResponseRequest, GeneralVideoInterviewRequest
 
 router = APIRouter(tags=["video"])
 
