@@ -21,6 +21,7 @@ deprecation==2.1.0
 docx2txt==0.9
 ecdsa==0.19.1
 en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl#sha256=1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85
+email-validator==2.3.0
 fastapi==0.116.1
 flash==1.0.3
 greenlet==3.2.4
@@ -59,7 +60,7 @@ psycopg2-binary==2.9.10
 pyasn1==0.6.1
 pycparser==2.22
 pycryptodome==3.23.0
-email-validator==2.2.0.post1
+email-validator==2.3.0
 pydantic_core==2.33.2
 pydub==0.25.1
 Pygments==2.19.2

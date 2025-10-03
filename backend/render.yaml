@@ -1,11 +1,12 @@
 services:
   - type: web
-    name: skreenit-backend
+    name: backend-skreenit
     env: python
     plan: free
     region: oregon
     buildCommand: "pip install -r backend/requirements.txt"
     startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    pythonVersion: 3.11
     healthCheckPath: "/health"
     envVars:
       - key: SUPABASE_URL
@@ -19,4 +20,4 @@ services:
       - key: FRONTEND_BASE_URL
         value: "https://login.skreenit.com"
       - key: ALLOWED_ORIGINS
-        value: "http://localhost:8000,https://skreenit.com,https://www.skreenit.com,https://login.skreenit.com,https://applicant.skreenit.com,https://recruiter.skreenit.com,https://dashboard.skreenit.com,https://auth.skreenit.com"
+        value: "http://localhost:8001,https://skreenit.com,https://www.skreenit.com,https://login.skreenit.com,https://applicant.skreenit.com,https://recruiter.skreenit.com,https://dashboard.skreenit.com,https://auth.skreenit.com"

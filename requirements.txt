@@ -1,2 +1,0 @@
-# Root requirements for Railway/Nixpacks detection
--r backend/requirements.txt
