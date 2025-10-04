@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Header
 from supabase import create_client, Client
 import os
-from models.notification_models import NotificationRequest
+from ..models.notification_models import NotificationRequest
 
 router = APIRouter(tags=["notification"])
 
