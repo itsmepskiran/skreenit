@@ -1,6 +1,6 @@
 import { supabase } from './supabase-config.js'
+import { backendFetch } from './backend-client.js'
 
-const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com'
 let currentUser = null
 
 // Bootstrap session from URL fragment (access_token/refresh_token) if present, and persist basic info
@@ -126,7 +126,7 @@ function renderOverview() {
     if (!appId) return
     try {
       const token = localStorage.getItem('skreenit_token')
-      const resp = await fetch(`${BACKEND_URL}/recruiter/application/${appId}/approve`, {
+      const resp = await backendFetch(`/recruiter/application/${appId}/approve`, {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -145,7 +145,7 @@ function renderOverview() {
     if (!appId) return
     try {
       const token = localStorage.getItem('skreenit_token')
-      const resp = await fetch(`${BACKEND_URL}/recruiter/application/${appId}/resume-url`, {
+      const resp = await backendFetch(`/recruiter/application/${appId}/resume-url`, {
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         }
@@ -170,7 +170,7 @@ function renderOverview() {
     const payload = lines.map((q, i) => ({ question_text: q, question_order: i + 1, time_limit: 120 }))
     try {
       const token = localStorage.getItem('skreenit_token')
-      const resp = await fetch(`${BACKEND_URL}/recruiter/job/${jobId}/questions`, {
+      const resp = await backendFetch(`/recruiter/job/${jobId}/questions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -192,7 +192,7 @@ function renderOverview() {
     listEl.textContent = 'Loading...'
     try {
       const token = localStorage.getItem('skreenit_token')
-      const resp = await fetch(`${BACKEND_URL}/recruiter/job/${jobId}/questions`, {
+      const resp = await backendFetch(`/recruiter/job/${jobId}/questions`, {
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         }
@@ -216,7 +216,7 @@ function renderOverview() {
     const scoresDiv = node.querySelector('#generalVideoScores')
     try {
       const token = localStorage.getItem('skreenit_token')
-      const resp = await fetch(`${BACKEND_URL}/applicant/general-video/${candidateId}`, {
+      const resp = await backendFetch(`/applicant/general-video/${candidateId}`, {
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },

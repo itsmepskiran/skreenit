@@ -466,14 +466,14 @@
   <script type="module" src="https://auth.skreenit.com/assets/js/application-form.js"></script>
   <script type="module">
       import { supabase } from 'https://auth.skreenit.com/assets/js/supabase-config.js'
+      import { backendFetch } from 'https://auth.skreenit.com/assets/js/backend-client.js'
       (async function prefill(){
         try {
           const userId = localStorage.getItem('skreenit_user_id');
-          const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com';
           const token = localStorage.getItem('skreenit_token');
           // Backend prefill
           try {
-            const res = await fetch(`${BACKEND_URL}/applicant/detailed-form/${userId}`, {
+            const res = await backendFetch(`/applicant/detailed-form/${userId}`, {
               headers: {
                 ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
               }

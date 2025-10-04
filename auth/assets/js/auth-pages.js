@@ -1,5 +1,6 @@
 // Auth Pages Logic - Skreenit Edition
 import { supabase, auth, db, storage } from './supabase-config.js'
+import { backendFetch, backendUrl } from './backend-client.js'
 
 // Resend integration note: use Resend on the server only. Do not expose API keys in the client.
 function emailEnabled() {
@@ -81,12 +82,12 @@ export async function handleRegistrationSubmit(e) {
       fd.append('mobile_number', mobile)
     }
     const registerPath = isLocal ? '/auth/register' : '/register'
-    const url = (window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com') + registerPath
-    const resp = await fetch(url, { method: 'POST', body: fd })
+    const resp = await backendFetch(registerPath, { method: 'POST', body: fd })
     let out = {}
     const text = await resp.text()
     try { out = JSON.parse(text) } catch {}
     if (!resp.ok || out?.ok === false) {
+      const url = backendUrl() + registerPath
       console.error('Registration POST failed', { url, status: resp.status, body: text })
       throw new Error(out?.error || `Registration failed (HTTP ${resp.status})`)
     }
@@ -192,7 +193,7 @@ export async function handleLoginSubmit(e) {
       let storedCompanyId = user?.user_metadata?.company_id || ''
       if (!storedCompanyId && token) {
         try {
-          const resp = await fetch(`${window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com'}/recruiter/profile/${user.id}`, {
+          const resp = await backendFetch(`/recruiter/profile/${user.id}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
           if (resp.ok) {
@@ -339,8 +340,7 @@ export async function handleUpdatePasswordSubmit(e) {
       const { data: sess } = await supabase.auth.getSession()
       const atNotify = sess?.session?.access_token
       if (atNotify) {
-        const url = (window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com') + '/auth/password-updated'
-        await fetch(url, { method: 'POST', headers: { 'Authorization': `Bearer ${atNotify}` } })
+        await backendFetch('/auth/password-updated', { method: 'POST', headers: { 'Authorization': `Bearer ${atNotify}` } })
       }
     } catch {}
 

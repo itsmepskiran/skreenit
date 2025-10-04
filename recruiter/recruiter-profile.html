@@ -100,8 +100,8 @@
       }
     })()
   </script>
-  <script>
-    window.SKREENIT_BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com';
+  <script type="module">
+    import { backendFetch } from 'https://auth.skreenit.com/assets/js/backend-client.js'
     const form = document.getElementById('recruiterProfileForm');
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -124,7 +124,7 @@
 
       try {
         const token = localStorage.getItem('skreenit_token');
-        const resp = await fetch(`${window.SKREENIT_BACKEND_URL}/recruiter/profile`, {
+        const resp = await backendFetch('/recruiter/profile', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

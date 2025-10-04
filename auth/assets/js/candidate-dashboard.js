@@ -1,6 +1,6 @@
 import { supabase } from './supabase-config.js'
+import { backendFetch } from './backend-client.js'
 
-const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com'
 let currentUser = null
 
 // Bootstrap session from URL fragment (access_token/refresh_token) if present, and persist basic info
@@ -91,7 +91,7 @@ function setActiveNav(hash) {
 async function fetchGeneralVideoStatus() {
   try {
     const token = localStorage.getItem('skreenit_token')
-    const res = await fetch(`${BACKEND_URL}/video/general/${currentUser.id}`, {
+    const res = await backendFetch(`/video/general/${currentUser.id}`, {
       headers: {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       }
@@ -105,7 +105,7 @@ async function fetchPendingVideoQuestions() {
   try {
     const token = localStorage.getItem('skreenit_token')
     // Find latest application with status under_review for this candidate
-    const resp = await fetch(`${BACKEND_URL}/dashboard/summary`, {
+    const resp = await backendFetch('/dashboard/summary', {
       headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     })
     const data = await resp.json().catch(() => ({}))
@@ -114,7 +114,7 @@ async function fetchPendingVideoQuestions() {
     if (!underReview) return null
     // Fetch job questions for that application
     const jobId = underReview.job_id
-    const q = await fetch(`${BACKEND_URL}/recruiter/job/${jobId}/questions`, {
+    const q = await backendFetch(`/recruiter/job/${jobId}/questions`, {
       headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     })
     const qData = await q.json().catch(() => ({}))
@@ -166,7 +166,7 @@ function renderOverview(statusData) {
     fd.append('video', file)
     try {
       const token = localStorage.getItem('skreenit_token')
-      const resp = await fetch(`${BACKEND_URL}/video/general`, {
+      const resp = await backendFetch('/video/general', {
         method: 'POST',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -265,7 +265,7 @@ function renderOverview(statusData) {
             fd.append('application_id', pending.application.id)
             fd.append('question_id', questionId)
             fd.append('video', blob, `response-${questionId}.webm`)
-            const resp = await fetch(`${BACKEND_URL}/video/general`, { // temporary unified endpoint in backend/video.py
+            const resp = await backendFetch('/video/general', { // temporary unified endpoint in backend/video.py
               method: 'POST',
               headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
               body: fd,
@@ -301,7 +301,7 @@ function renderJobs() {
   ;(async () => {
     try {
       const token = localStorage.getItem('skreenit_token')
-      const resp = await fetch(`${BACKEND_URL}/dashboard/summary`, { headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } })
+      const resp = await backendFetch('/dashboard/summary', { headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } })
       const data = await resp.json().catch(() => ({}))
       const jobs = data?.jobs || []
       if (!jobs.length) { results.innerHTML = '<span style="color:#718096">No jobs available right now.</span>'; return }
@@ -415,7 +415,7 @@ function renderProfile() {
   ;(async () => {
     try {
       const token = localStorage.getItem('skreenit_token')
-      const res = await fetch(`${BACKEND_URL}/applicant/detailed-form/${currentUser.id}`, {
+      const res = await backendFetch(`/applicant/detailed-form/${currentUser.id}`, {
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
       })
       if (res.ok) {
@@ -449,7 +449,7 @@ function renderProfile() {
     const link = node.querySelector('#resumeLink')
     try {
       const token = localStorage.getItem('skreenit_token')
-      const resp = await fetch(`${BACKEND_URL}/applicant/resume-url/${currentUser.id}`, { headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } })
+      const resp = await backendFetch(`/applicant/resume-url/${currentUser.id}`, { headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } })
       if (!resp.ok) throw new Error('not found')
       const data = await resp.json()
       status.textContent = 'Latest resume available'
@@ -473,7 +473,7 @@ function renderProfile() {
       fd.append('applicant_id', currentUser.id)
       fd.append('resume', file)
       const token = localStorage.getItem('skreenit_token')
-      const resp = await fetch(`${BACKEND_URL}/applicant/upload-resume`, {
+      const resp = await backendFetch('/applicant/upload-resume', {
         method: 'POST',
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
         body: fd,

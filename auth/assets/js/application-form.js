@@ -1,8 +1,8 @@
 // Detailed Application Form logic (Shared)
 // Minimal stepper and submission logic with redirect to dashboards
+import { backendFetch } from './backend-client.js'
 
 const form = document.getElementById('detailedApplicationForm')
-const BACKEND_URL = window.SKREENIT_BACKEND_URL || 'https://skreenit-api.onrender.com'
 const prevBtn = document.getElementById('prevBtn')
 const nextBtn = document.getElementById('nextBtn')
 const submitBtn = document.getElementById('submitBtn')
@@ -141,7 +141,7 @@ form?.addEventListener('submit', async (e) => {
 
   try {
     const token = localStorage.getItem('skreenit_token')
-    await fetch(`${BACKEND_URL}/applicant/detailed-form`, {
+    await backendFetch('/applicant/detailed-form', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -184,7 +184,7 @@ saveDraftBtn?.addEventListener('click', async () => {
     localStorage.setItem(`skreenit_draft_${userId}`, JSON.stringify(draft))
     // Optional: send to backend if supported
     const token = localStorage.getItem('skreenit_token')
-    fetch(`${BACKEND_URL}/applicant/detailed-form`, {
+    backendFetch('/applicant/detailed-form', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: JSON.stringify({ candidate_id: userId, draft: true, ...draft })
