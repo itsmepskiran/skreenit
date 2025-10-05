@@ -1,9 +1,14 @@
     // Use failover list: local -> localhost:8000; prod -> Render then Railway
     (function() {
       const localBackend = 'http://localhost:8000'
-      const prodPrimary = 'https://aiskreenit.onrender.com'
+      const prodPrimary = 'https://aiskreenit.on.render.com'
       const prodSecondary = 'https://skreenit.up.railway.app'
       const host = window.location.hostname || ''
       const isLocal = host === 'localhost' || host === '127.0.0.1' || host === ''
       window.SKREENIT_BACKEND_URLS = isLocal ? [localBackend] : [prodPrimary, prodSecondary]
     })();
+  </script>
+  <script type="module">
+    import { handleRegistrationSubmit } from 'https://auth.skreenit.com/assets/js/auth-pages.js?v=20251004-1'
+    const form = document.getElementById('registrationForm')
+    form.addEventListener('submit', async function(e) {
