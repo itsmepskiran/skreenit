@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // Authentication Pages Handler for Skreenit
 // Handles registration, login, and password reset functionality
 
@@ -101,3 +102,5 @@ export async function handleRegistrationSubmit(event) {
         submitBtn.disabled = false
     }
 }
+=======
+>>>>>>> 435ff0d566c4d4123c7ad6d09da5da687154cf0d
