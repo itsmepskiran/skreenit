@@ -1,65 +1,84 @@
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from .routers import (
-    auth,
-    applicant,
-    recruiter,
-    dashboard,
-    video,
-    notification,
-    analytics
-)
-from .utils_others.error_handler import register_exception_handlers
-from supabase import create_client, Client
-
-# Load environment variables
-env_path = Path(__file__).parent / ".env"
-load_dotenv(dotenv_path=env_path)
-
-# Supabase config
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-
-# Application setup
-app = FastAPI(
-    title="Skreenit Application",
-    description="Skreenit Testing platform, HR automation, and candidate screening.",
-    version="1.0.0"
-)
-
 # Enable CORS for frontend
+# Environment-based CORS configuration for security
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS")
-origins = [x.strip() for x in ALLOWED_ORIGINS.split(",")] if ALLOWED_ORIGINS else ["*"]
+
+if ALLOWED_ORIGINS:
+    # Production: Use explicit allowed origins from environment
+    origins = [x.strip() for x in ALLOWED_ORIGINS.split(",")]
+else:
+    # Development: Allow common development URLs
+    origins = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+        "https://localhost:3000",
+        "https://127.0.0.1:3000",
+        # Add your development subdomains here
+        "http://auth.localhost:3000",
+        "http://login.localhost:3000",
+        "http://dashboards.localhost:3000",
+        "http://applicant.localhost:3000",
+        "http://recruiter.localhost:3000"
+    ]
+
+# Validate origins to prevent security issues
+def validate_origins(origins_list):
+    """Validate and filter origins for security"""
+    validated_origins = []
+    for origin in origins_list:
+        origin = origin.strip()
+        if not origin:
+            continue
+
+        # Basic validation - only allow http/https protocols
+        if not origin.startswith(('http://', 'https://')):
+            print(f"Warning: Invalid origin format: {origin}")
+            continue
+
+        # In production, be more restrictive
+        if os.getenv("ENVIRONMENT") == "production":
+            # Only allow specific production domains
+            allowed_domains = [
+                ".skreenit.com",
+                ".onrender.com",
+                ".railway.app"
+            ]
+            if not any(domain in origin for domain in allowed_domains):
+                print(f"Warning: Production origin not in allowed domains: {origin}")
+                continue
+
+        validated_origins.append(origin)
+
+    return validated_origins
+
+# Apply validation
+origins = validate_origins(origins)
+
+# Ensure we have at least one origin
+if not origins:
+    # Fallback to localhost for development
+    origins = ["http://localhost:3000"]
+    print("Warning: No valid origins configured, using localhost fallback")
+
+print(f"CORS enabled for origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "DNT",
+        "Cache-Control",
+        "X-Mx-ReqToken",
+        "Keep-Alive",
+        "X-Requested-With",
+        "If-Modified-Since"
+    ],
 )
-
-# Exception Handling
-register_exception_handlers(app)
-
-# App routers
-app.include_router(auth.router, prefix="/auth")
-app.include_router(applicant.router, prefix="/applicant")
-app.include_router(recruiter.router, prefix="/recruiter")
-app.include_router(dashboard.router, prefix="/dashboard")
-app.include_router(video.router, prefix="/video")
-app.include_router(notification.router, prefix="/notification")
-app.include_router(analytics.router, prefix="/analytics")
-
-# Root
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the HR/Candidate Screening Platform API!"}
-
-# Health check endpoint for local/staging probes and Postman tests
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
