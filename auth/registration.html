@@ -1,14 +1,74 @@
-    // Use failover list: local -> localhost:8000; prod -> Render then Railway
-    (function() {
-      const localBackend = 'http://localhost:8000'
-      const prodPrimary = 'https://aiskreenit.on.render.com'
-      const prodSecondary = 'https://skreenit.up.railway.app'
-      const host = window.location.hostname || ''
-      const isLocal = host === 'localhost' || host === '127.0.0.1' || host === ''
-      window.SKREENIT_BACKEND_URLS = isLocal ? [localBackend] : [prodPrimary, prodSecondary]
-    })();
-  </script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skreenit - Registration</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="https://auth.skreenit.com/assets/images/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://auth.skreenit.com/assets/images/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://auth.skreenit.com/assets/images/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://auth.skreenit.com/assets/images/apple-touch-icon.png" />
+  <link rel="manifest" href="https://auth.skreenit.com/assets/images/site.webmanifest" />
+  <link rel="stylesheet" href="https://auth.skreenit.com/assets/css/dashboard-styles.css" />
+</head>
+<body>
+  <a href="https://skreenit.com" style="position:fixed;left:16px;top:16px;z-index:10;display:inline-block;">
+    <img src="https://auth.skreenit.com/assets/images/logo.png" alt="Skreenit" style="height:32px;width:auto;" />
+  </a>
+
+  <div style="max-width:720px;margin:6rem auto;background:#fff;padding:2rem;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,0.1);">
+    <h2>Create your account</h2>
+    <form id="registrationForm" style="margin-top:1rem;">
+      <div class="form-group">
+        <label for="full_name">Full Name*</label>
+        <input type="text" id="full_name" name="full_name" required />
+      </div>
+      <div class="form-group">
+        <label for="email">Email*</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+      <div class="form-group">
+        <label for="mobile">Mobile*</label>
+        <input type="tel" id="mobile" name="mobile" required />
+      </div>
+      <div class="form-group">
+        <label for="location">Location*</label>
+        <input type="text" id="location" name="location" required />
+      </div>
+      <div class="form-group">
+        <label for="role">Role*</label>
+        <select id="role" name="role" required>
+          <option value="candidate">Candidate</option>
+          <option value="recruiter">Recruiter</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="company_name">Company (Recruiters only)</label>
+        <input type="text" id="company_name" name="company_name" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password*</label>
+        <input type="password" id="password" name="password" required />
+      </div>
+      <div class="form-group">
+        <label for="resume">Resume (optional)</label>
+        <input type="file" id="resume" name="resume" accept=".pdf,.doc,.docx" />
+      </div>
+      <div class="modal-footer" style="padding:0; margin-top: 1rem;">
+        <button type="submit" class="btn btn-primary">Create Account</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Prefer module import for handlers -->
   <script type="module">
-    import { handleRegistrationSubmit } from 'https://auth.skreenit.com/assets/js/auth-pages.js?v=20251004-1'
+    import { handleRegistrationSubmit } from 'https://auth.skreenit.com/assets/js/auth-pages.js'
     const form = document.getElementById('registrationForm')
-    form.addEventListener('submit', async function(e) {
+    form.addEventListener('submit', async (e) => {
+      await handleRegistrationSubmit(e)
+    })
+  </script>
+</body>
+</html>
