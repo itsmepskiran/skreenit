@@ -1,106 +1,201 @@
-<<<<<<< HEAD
-// Authentication Pages Handler for Skreenit
-// Handles registration, login, and password reset functionality
+// auth/assets/js/auth-pages.js
 
-import { supabase, auth } from './supabase-config.js'
+import { supabase } from './supabase-config.js'
 import { backendFetch, handleResponse } from './backend-client.js'
 
-// Registration form handler
-export async function handleRegistrationSubmit(event) {
-    event.preventDefault()
+// -------- Utilities --------
 
-    const form = event.target
-    const submitBtn = form.querySelector('button[type="submit"]')
-    const originalText = submitBtn.textContent
-
-    submitBtn.textContent = 'Creating Account...'
-    submitBtn.disabled = true
-
-    try {
-        const formData = new FormData(form)
-        const registrationData = {
-            full_name: formData.get('full_name'),
-            email: formData.get('email'),
-            mobile: formData.get('mobile'),
-            location: formData.get('location'),
-            role: formData.get('role'),
-            company_name: formData.get('company_name'),
-            resume: formData.get('resume')
-        }
-
-        const requiredFields = ['full_name', 'email', 'mobile', 'location', 'role']
-        for (const field of requiredFields) {
-            if (!registrationData[field]) {
-                throw new Error(`${field.replace('_', ' ')} is required`)
-            }
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(registrationData.email)) {
-            throw new Error('Please enter a valid email address')
-        }
-
-        if (registrationData.mobile.length < 10) {
-            throw new Error('Please enter a valid mobile number')
-        }
-
-        console.log('Registering with Supabase...')
-        const { data: authData, error: authError } = await auth.signUp(
-            registrationData.email,
-            formData.get('password'),
-            {
-                data: {
-                    full_name: registrationData.full_name,
-                    role: registrationData.role,
-                    mobile: registrationData.mobile,
-                    location: registrationData.location
-                }
-            }
-        )
-
-        if (authError) {
-            throw new Error(`Registration failed: ${authError.message}`)
-        }
-
-        console.log('Supabase registration successful')
-
-        const backendFormData = new FormData()
-        backendFormData.append('full_name', registrationData.full_name)
-        backendFormData.append('email', registrationData.email)
-        backendFormData.append('mobile', registrationData.mobile)
-        backendFormData.append('location', registrationData.location)
-        backendFormData.append('role', registrationData.role)
-        backendFormData.append('company_name', registrationData.company_name || '')
-
-        const resumeFile = formData.get('resume')
-        if (resumeFile && resumeFile.size > 0) {
-            backendFormData.append('resume', resumeFile)
-        }
-
-        const response = await backendFetch('/auth/register', {
-            method: 'POST',
-            body: backendFormData
-        })
-
-        const result = await handleResponse(response)
-
-        if (!result.ok) {
-            throw new Error(result.error || 'Registration failed')
-        }
-
-        showNotification('Registration successful! Please check your email for verification.', 'success')
-
-        setTimeout(() => {
-            window.location.href = 'https://login.skreenit.com/login.html'
-        }, 2000)
-
-    } catch (error) {
-        console.error('Registration error:', error)
-        showNotification(error.message || 'Registration failed. Please try again.', 'error')
-    } finally {
-        submitBtn.textContent = originalText
-        submitBtn.disabled = false
-    }
+// Safe notification fallback (prevents crashes if a shared UI util isn't loaded)
+function notify(message, type = 'info') {
+  if (typeof window.showNotification === 'function') {
+    try { window.showNotification(message, type) } catch { console.log('[Notice]', message) }
+  } else {
+    console[type === 'error' ? 'error' : 'log']('[Notice]', message)
+  }
 }
-=======
->>>>>>> 435ff0d566c4d4123c7ad6d09da5da687154cf0d
+
+// Generate a strong temporary password for the initial Supabase signUp
+function generateTempPassword(length = 16) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{};:,.?'
+  let out = ''
+  for (let i = 0; i < length; i++) out += chars[Math.floor(Math.random() * chars.length)]
+  return out
+}
+
+// Persist session and user info for use across subdomains/pages
+async function persistSessionToLocalStorage() {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const { data: userData } = await supabase.auth.getUser()
+    const access_token = sessionData?.session?.access_token || ''
+    const refresh_token = sessionData?.session?.refresh_token || ''
+    const user = userData?.user || null
+
+    if (access_token) localStorage.setItem('skreenit_token', access_token)
+    if (refresh_token) localStorage.setItem('skreenit_refresh_token', refresh_token)
+    if (user?.id) localStorage.setItem('skreenit_user_id', user.id)
+    const role = user?.user_metadata?.role
+    if (role) localStorage.setItem('skreenit_role', role)
+  } catch (e) {
+    console.warn('Failed to persist session to localStorage', e)
+  }
+}
+
+// Role-based redirect after login
+function redirectByRole(defaultUrl = 'https://dashboard.skreenit.com/candidate-dashboard.html') {
+  const role = localStorage.getItem('skreenit_role')
+  if (role === 'recruiter') {
+    window.location.href = 'https://dashboard.skreenit.com/recruiter-dashboard.html'
+  } else if (role === 'candidate') {
+    window.location.href = 'https://dashboard.skreenit.com/candidate-dashboard.html'
+  } else {
+    window.location.href = defaultUrl
+  }
+}
+
+// -------- Handlers --------
+
+// Registration: user provides basic details; Supabase sends verification email.
+// After email verification, user is redirected to update-password page.
+export async function handleRegistrationSubmit(event) {
+  event.preventDefault()
+  const form = event.target
+  const submitBtn = form.querySelector('button[type="submit"]')
+  const originalText = submitBtn?.textContent || 'Register'
+  if (submitBtn) { submitBtn.textContent = 'Registering...'; submitBtn.disabled = true }
+
+  try {
+    const fd = new FormData(form)
+    const full_name = (fd.get('full_name') || '').trim()
+    const email = (fd.get('email') || '').trim()
+    const mobile = (fd.get('mobile') || '').trim()
+    const location = (fd.get('location') || '').trim()
+    const role = (fd.get('role') || '').trim()
+    const company_name = (fd.get('company_name') || '').trim()
+    const resume = fd.get('resume')
+
+    if (!full_name || !email || !mobile || !location || !role) {
+      throw new Error('All required fields must be filled.')
+    }
+    // Basic validations
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    if (!emailOk) throw new Error('Please enter a valid email address.')
+    if (mobile.length < 10) throw new Error('Please enter a valid mobile number.')
+
+    // Supabase requires a password for signUp; use a strong temporary one
+    const tempPassword = generateTempPassword()
+    const { error: signUpErr } = await supabase.auth.signUp({
+      email,
+      password: tempPassword,
+      options: {
+        // After user verifies from email, they land here to set a real password
+        emailRedirectTo: 'https://login.skreenit.com/update-password.html',
+        data: {
+          full_name,
+          role,
+          mobile,
+          location,
+          company_name: company_name || null
+        }
+      }
+    })
+    if (signUpErr) throw new Error(`Registration failed: ${signUpErr.message}`)
+
+    // Persist basic details to backend
+    const bfd = new FormData()
+    bfd.append('full_name', full_name)
+    bfd.append('email', email)
+    bfd.append('mobile', mobile)
+    bfd.append('location', location)
+    bfd.append('role', role)
+    bfd.append('company_name', company_name || '')
+    if (resume && resume.size > 0) bfd.append('resume', resume)
+
+    const resp = await backendFetch('/auth/register', { method: 'POST', body: bfd })
+    const result = await handleResponse(resp)
+    if (!result || result.ok === false) throw new Error(result?.error || 'Registration failed.')
+
+    // UX: do not redirect; let page show thank-you state
+    notify('Registration successful! Please check your email to verify your account.', 'success')
+    return true
+  } catch (err) {
+    console.error('Registration error:', err)
+    notify(err.message || 'Registration failed. Please try again.', 'error')
+    return false
+  } finally {
+    if (submitBtn) { submitBtn.textContent = originalText; submitBtn.disabled = false }
+  }
+}
+
+// Update Password after the email verification link opens update-password page.
+// Requires the email link to have created a valid session.
+export async function handleUpdatePasswordSubmit(event) {
+  event.preventDefault()
+  const form = event.target
+  const submitBtn = form.querySelector('button[type="submit"]')
+  const originalText = submitBtn?.textContent || 'Update Password'
+  if (submitBtn) { submitBtn.textContent = 'Updating...'; submitBtn.disabled = true }
+
+  try {
+    const fd = new FormData(form)
+    const new_password = (fd.get('new_password') || '').trim()
+    const confirm_password = (fd.get('confirm_password') || '').trim()
+    if (new_password.length < 8) throw new Error('Password must be at least 8 characters.')
+    if (new_password !== confirm_password) throw new Error('Passwords do not match.')
+
+    // Make sure session exists (created via magic-email link)
+    const { data: { user }, error: userErr } = await supabase.auth.getUser()
+    if (userErr || !user) {
+      throw new Error('Your session is not active. Please open the password update link from your email again.')
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: new_password })
+    if (error) throw new Error(error.message)
+
+    notify('Password updated successfully! Redirecting to login...', 'success')
+    setTimeout(() => {
+      window.location.href = 'https://login.skreenit.com/login.html'
+    }, 5000)
+  } catch (err) {
+    console.error('Update password error:', err)
+    notify(err.message || 'Failed to update password. Please try again.', 'error')
+  } finally {
+    if (submitBtn) { submitBtn.textContent = originalText; submitBtn.disabled = false }
+  }
+}
+
+// Login with email + password, store session/role, and redirect by role
+export async function handleLoginSubmit(event) {
+  event.preventDefault()
+  const form = event.target
+  const submitBtn = form.querySelector('button[type="submit"]')
+  const originalText = submitBtn?.textContent || 'Login'
+  if (submitBtn) { submitBtn.textContent = 'Signing in...'; submitBtn.disabled = true }
+
+  try {
+    const fd = new FormData(form)
+    const role = (fd.get('role') || '').trim() // used for UI, we still trust role from user_metadata
+    const email = (fd.get('email') || '').trim()
+    const password = (fd.get('password') || '').trim()
+    const company_id = (fd.get('company_id') || '').trim() // optional recruiter context
+
+    if (!email || !password) throw new Error('Email and password are required.')
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw new Error(error.message)
+
+    // Persist session + role in localStorage for downstream pages
+    await persistSessionToLocalStorage()
+
+    // Optional: you can pass company_id to backend if needed (e.g., validate company mapping)
+    // try { await backendFetch('/auth/login-meta', { method: 'POST', body: JSON.stringify({ company_id }), headers: { 'Content-Type': 'application/json' } }) } catch {}
+
+    // Redirect by role from user_metadata
+    redirectByRole()
+  } catch (err) {
+    console.error('Login error:', err)
+    notify(err.message || 'Login failed. Please try again.', 'error')
+  } finally {
+    if (submitBtn) { submitBtn.textContent = originalText; submitBtn.disabled = false }
+  }
+}

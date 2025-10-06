@@ -118,7 +118,11 @@
       updateFields();
     });
   </script>
-
+  <script>
+    window.showNotification = window.showNotification || function (message, type = 'info') {
+      console[type === 'error' ? 'error' : 'log']('[Notice]', message);
+    };
+  </script>
   <script type="module">
     import { handleRegistrationSubmit } from 'https://auth.skreenit.com/assets/js/auth-pages.js'
     const form = document.getElementById('registrationForm')
