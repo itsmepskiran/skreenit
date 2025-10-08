@@ -1,5 +1,8 @@
 import os
 import httpx
+import logging
+
+logging.basicConfig(level=logging.INFO)
 from typing import Optional, Dict, Any
 from supabase import Client
 from services.supabase_client import get_client
@@ -46,6 +49,8 @@ class AuthService:
             return "".join(secrets.choice(ALPHABET) for _ in range(length))
 
         temp_password = gen_temp(12)
+
+        logging.info(f"Attempting to create user {email} in Supabase with email_confirm=False")
         try:
             auth_res = self.supabase.auth.admin.create_user({
                 "email": email,
@@ -61,6 +66,7 @@ class AuthService:
                     **({"company_id": company_id} if company_id else {}),
                 },
             })
+            logging.info(f"Supabase user creation response for {email}: {auth_res}")
         except Exception as ce:
             msg = str(ce)
             if "User already registered" in msg or "already exists" in msg:
@@ -123,8 +129,10 @@ class AuthService:
           <p><b>Regards,</b><br/>Team Skreenit</p>
         </div>
         """
+        logging.info(f"Sending custom welcome email to {email} via Resend.")
         try:
             email_res = send_email(to=email, subject="Welcome to Skreenit", html=html)
+            logging.info(f"Custom welcome email result for {email}: {email_res}")
         except Exception as e:
             email_res = {"error": str(e)}
 
