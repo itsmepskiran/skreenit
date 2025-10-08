@@ -1,7 +1,7 @@
 // auth/assets/js/auth-pages.js
 
 import { supabase } from './supabase-config.js'
-import { backendFetch, handleResponse } from './backend-client.js'
+import { backendUploadFile, handleResponse, backendUrl } from './backend-client.js'
 
 // -------- Utilities --------
 
@@ -41,15 +41,43 @@ async function persistSessionToLocalStorage() {
   }
 }
 
-// Role-based redirect after login
-function redirectByRole(defaultUrl = 'https://dashboard.skreenit.com/candidate-dashboard.html') {
+// Role-based redirect after login with first-time login handling
+async function redirectByRole(defaultUrl = 'https://dashboard.skreenit.com/candidate-dashboard.html') {
   const role = localStorage.getItem('skreenit_role')
+  const userId = localStorage.getItem('skreenit_user_id')
+  
+  try {
+    // Check if this is first-time login by checking user profile completion
+    const { data: { user } } = await supabase.auth.getUser()
+    const isFirstTimeLogin = !user?.user_metadata?.profile_completed
+    
   if (role === 'recruiter') {
-    window.location.href = 'https://dashboard.skreenit.com/recruiter-dashboard.html'
+      if (isFirstTimeLogin) {
+        // First-time recruiter goes to profile setup
+        window.location.href = 'https://recruiter.skreenit.com/recruiter-profile.html'
+      } else {
+        // Returning recruiter goes to dashboard
+        window.location.href = 'https://dashboard.skreenit.com/recruiter-dashboard.html'
+      }
   } else if (role === 'candidate') {
-    window.location.href = 'https://dashboard.skreenit.com/candidate-dashboard.html'
+      if (isFirstTimeLogin) {
+        // First-time candidate goes to detailed application form
+        window.location.href = 'https://applicant.skreenit.com/detailed-application-form.html'
+      } else {
+        // Returning candidate goes to dashboard
+        window.location.href = 'https://dashboard.skreenit.com/candidate-dashboard.html'
+      }
   } else {
     window.location.href = defaultUrl
+  }
+  } catch (error) {
+    console.error('Error checking first-time login:', error)
+    // Fallback to default behavior
+    if (role === 'recruiter') {
+      window.location.href = 'https://dashboard.skreenit.com/recruiter-dashboard.html'
+    } else {
+      window.location.href = 'https://dashboard.skreenit.com/candidate-dashboard.html'
+    }
   }
 }
 
@@ -111,7 +139,7 @@ export async function handleRegistrationSubmit(event) {
     bfd.append('company_name', company_name || '')
     if (resume && resume.size > 0) bfd.append('resume', resume)
 
-    const resp = await backendFetch('/auth/register', { method: 'POST', body: bfd })
+    const resp = await backendUploadFile('/auth/register', bfd )
     const result = await handleResponse(resp)
     if (!result || result.ok === false) throw new Error(result?.error || 'Registration failed.')
 
@@ -151,6 +179,23 @@ export async function handleUpdatePasswordSubmit(event) {
 
     const { error } = await supabase.auth.updateUser({ password: new_password })
     if (error) throw new Error(error.message)
+
+    // Notify backend about password update (for email notifications)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData?.session?.access_token
+      if (token) {
+        await fetch(`${backendUrl()}/auth/password-updated`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      }
+    } catch (e) {
+      console.warn('Failed to notify backend about password update:', e)
+    }
 
     notify('Password updated successfully! Redirecting to login...', 'success')
     setTimeout(() => {

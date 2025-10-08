@@ -6,100 +6,166 @@
   <title>Skreenit - Registration</title>
 
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="https://auth.skreenit.com/assets/images/favicon.ico" />
   <link rel="icon" type="image/png" sizes="32x32" href="https://auth.skreenit.com/assets/images/favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="https://auth.skreenit.com/assets/images/favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="https://auth.skreenit.com/assets/images/apple-touch-icon.png" />
-  <link rel="manifest" href="https://auth.skreenit.com/assets/images/site.webmanifest" />
+  <link rel="manifest" href="https://auth.skreenit.com/assets/images/android-chrome-192x192.png" />
 
-  <link rel="stylesheet" href="https://auth.skreenit.com/assets/css/dashboard-styles.css" />
+  <link rel="stylesheet" href="https://auth.skreenit.com/assets/css/shared-styles.css" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    .auth-wrapper { max-width: 640px; margin: 4rem auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.1); }
-    .auth-header { padding: 1.5rem 2rem; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 0.75rem; }
-    .auth-header h1 { font-size: 1.5rem; margin: 0; color: #2d3748; }
-    .auth-body { padding: 2rem; }
-    .form-row { display:flex; gap:1rem; }
-    .form-row .form-group { flex:1; }
-    .hidden { display: none; }
-    .notice { background:#f0fff4; border:1px solid #9ae6b4; color:#22543d; padding:1rem; border-radius:8px; margin-bottom:1rem; }
-    .error-message { color: #e53e3e; margin-bottom: 1rem; font-size: 0.95rem; }
+    .auth-wrapper { max-width: 640px; }
   </style>
 </head>
 <body>
-  <a href="https://skreenit.com" style="position:fixed;left:16px;top:16px;z-index:10;display:inline-block;">
-    <img src="https://auth.skreenit.com/assets/images/logo.png" alt="Skreenit" style="height:48px;width:auto;" />
+  <!-- Floating decorative elements -->
+  <div class="floating-elements">
+    <div class="floating-circle"></div>
+    <div class="floating-circle"></div>
+    <div class="floating-circle"></div>
+    <div class="floating-circle"></div>
+  </div>
+
+  <a href="https://skreenit.com" class="logo-link animate-pulse">
+    <img src="https://auth.skreenit.com/assets/images/logo.png" alt="Skreenit" class="animate-pulse" />
   </a>
-  <div class="auth-wrapper">
-    <img src="https://auth.skreenit.com/assets/images/logobrand.png" alt="Skreenit" style="width:100%;height:auto;display:block;border-top-left-radius:12px;border-top-right-radius:12px;" />
+  <div class="auth-wrapper animate-slideInScale">
+    <img src="https://auth.skreenit.com/assets/images/logobrand.png" alt="Skreenit" class="brand-image" />
     <div class="auth-header">
-      <i class="fas fa-user-plus"></i>
-      <h1>Create Your Account</h1>
+      <h1>
+        <i class="fas fa-user-plus"></i>
+        Join Skreenit
+      </h1>
+      <p style="margin: 0.5rem 0 0; color: var(--text-light); font-size: 0.95rem;">Create your account and start your recruitment journey</p>
     </div>
     <div class="auth-body">
       <div id="formError" class="error-message"></div>
       <form id="registrationForm">
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group animate-fadeInLeft">
             <label for="full_name">Full Name*</label>
-            <input type="text" id="full_name" name="full_name" required />
+            <input type="text" id="full_name" name="full_name" required placeholder="Enter your full name" />
           </div>
-          <div class="form-group">
+          <div class="form-group animate-fadeInRight">
             <label for="mobile">Mobile*</label>
-            <input type="text" id="mobile" name="mobile" required />
+            <input type="text" id="mobile" name="mobile" required placeholder="Enter your mobile number" />
           </div>
         </div>
 
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group animate-fadeInLeft">
             <label for="email">Email*</label>
-            <input type="email" id="email" name="email" required />
+            <input type="email" id="email" name="email" required placeholder="Enter your email address" />
           </div>
-          <div class="form-group">
+          <div class="form-group animate-fadeInRight">
             <label for="location">Location*</label>
-            <input type="text" id="location" name="location" required />
+            <input type="text" id="location" name="location" required placeholder="Enter your location" />
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group animate-fadeInUp">
           <label for="role">Register as*</label>
           <select id="role" name="role" required>
-            <option value="candidate">Candidate</option>
-            <option value="recruiter">Recruiter</option>
+            <option value="">Select your role</option>
+            <option value="candidate">🎯 Candidate - Find your dream job</option>
+            <option value="recruiter">🏢 Recruiter - Hire top talent</option>
           </select>
         </div>
 
-        <div id="recruiterFields" class="hidden">
+        <div id="recruiterFields" class="hidden animate-fadeInUp">
           <div class="form-group">
-            <label for="company_name">Company Name*</label>
+            <label for="company_name">🏢 Company Name*</label>
             <input type="text" id="company_name" name="company_name" placeholder="Enter your company name" />
           </div>
         </div>
 
-        <div id="candidateFields" class="hidden">
+        <div id="candidateFields" class="hidden animate-fadeInUp">
           <div class="form-group">
-            <label for="resume">Resume (PDF, DOC, DOCX, RTF, TXT, ODT)</label>
+            <label for="resume">📄 Resume (PDF, DOC, DOCX, RTF, TXT, ODT)</label>
             <input type="file" id="resume" name="resume" accept=".pdf,.doc,.docx,.rtf,.txt,.odt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf,text/plain,application/vnd.oasis.opendocument.text" />
+            <div class="password-hint">Upload your resume to get better job matches</div>
           </div>
         </div>
 
-        <div class="modal-footer" style="padding:0; margin-top: 1rem;">
-          <button type="submit" class="btn btn-primary">Register</button>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary btn-large" style="width: 100%;">
+            <i class="fas fa-rocket"></i>
+            Create Account
+          </button>
         </div>
       </form>
       <div id="thankYou" class="hidden">
         <div class="notice">
-          <strong>Thank you for registering with us.</strong>
-          <p>We’ve sent a confirmation email to your registered address. Please verify your email to continue. After verification, you’ll be redirected to set your password.</p>
+          <i class="fas fa-check-circle"></i>
+          <div>
+            <strong>Thank you for registering with us!</strong>
+            <p>We've sent a confirmation email to your registered address. Please verify your email to continue. After verification, you'll be redirected to set your password.</p>
+          </div>
         </div>
-        <a class="btn btn-primary" id="goLoginBtn" href="https://login.skreenit.com/login.html">Go to Login</a>
+        <a class="btn btn-primary btn-large" id="goLoginBtn" href="https://login.skreenit.com/login.html" style="width: 100%;">
+          <i class="fas fa-sign-in-alt"></i>
+          Go to Login
+        </a>
       </div>
     </div>
   </div>
 
   <script>
-    // Show/hide recruiter/candidate fields based on role
     document.addEventListener('DOMContentLoaded', function() {
+      // Enhanced form interactions and animations
+      const observerOptions = {
+          threshold: 0.1,
+          rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                  entry.target.style.opacity = '1';
+                  entry.target.style.transform = 'translateY(0) translateX(0) scale(1)';
+              }
+          });
+      }, observerOptions);
+
+      // Observe all animated elements
+      document.querySelectorAll('[class*="animate-"]').forEach(el => {
+          if (!el.classList.contains('animate-pulse') && !el.classList.contains('animate-float')) {
+              el.style.opacity = '0';
+              if (el.classList.contains('animate-fadeInLeft')) {
+                  el.style.transform = 'translateX(-30px)';
+              } else if (el.classList.contains('animate-fadeInRight')) {
+                  el.style.transform = 'translateX(30px)';
+              } else if (el.classList.contains('animate-slideInScale')) {
+                  el.style.transform = 'translateY(20px) scale(0.95)';
+              } else {
+                  el.style.transform = 'translateY(30px)';
+              }
+              observer.observe(el);
+          }
+      });
+
+      // Enhanced form validation feedback
+      const inputs = document.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+          input.addEventListener('blur', function() {
+              const formGroup = this.closest('.form-group');
+              if (this.checkValidity()) {
+                  formGroup.classList.add('success');
+                  formGroup.classList.remove('error');
+              } else if (this.value) {
+                  formGroup.classList.add('error');
+                  formGroup.classList.remove('success');
+              }
+          });
+
+          input.addEventListener('input', function() {
+              const formGroup = this.closest('.form-group');
+              formGroup.classList.remove('error', 'success');
+          });
+      });
+
+      // Role-based field visibility
       const roleSelect = document.getElementById('role');
       const recruiterFields = document.getElementById('recruiterFields');
       const candidateFields = document.getElementById('candidateFields');

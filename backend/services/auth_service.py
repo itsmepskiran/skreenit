@@ -2,8 +2,8 @@ import os
 import httpx
 from typing import Optional, Dict, Any
 from supabase import Client
-from .supabase_client import get_client
-from ..utils_others.resend_email import send_email
+from services.supabase_client import get_client
+from utils_others.resend_email import send_email
 
 class AuthService:
     def __init__(self, client: Optional[Client] = None) -> None:

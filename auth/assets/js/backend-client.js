@@ -1,274 +1,191 @@
-// Final fallback to new public APIs (Render primary, Railway secondary)
-if (!deduped.length) {
-  deduped.push('https://aiskreenit.onrender.com')
-  deduped.push('https://skreenit.up.railway.app')
-}
+// auth/assets/js/backend-client.js
 
-// Create a complete backend client with proper failover logic for local and production environments
+// A resilient backend client with environment-aware base URLs, timeout, and failover.
+// Key features:
+// - Env-based URLs: localhost for dev, Render primary, Railway secondary for prod
+// - Timeout using AbortController
+// - Failover only on network errors or 5xx responses (not on 4xx like 422)
+// - FormData-safe: does NOT set Content-Type when body is FormData
+// - Convenience helpers: backendFetch/get/post/put/delete/uploadFile
+// - handleResponse: consistent error parsing
+
 class BackendClient {
-    constructor() {
-        this.backendUrls = this.getBackendUrls();
-        this.currentUrlIndex = 0;
-        this.requestTimeout = 10000; // 10 seconds
-        this.maxRetries = 3;
+  constructor() {
+    this.backendUrls = this.getBackendUrls()
+    this.currentUrlIndex = 0
+    this.requestTimeout = 10000
+    this.maxRetries = 3
+  }
+
+  getBackendUrls() {
+    const host = window.location.hostname || ''
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host === ''
+    if (isLocal) {
+      return ['http://localhost:8000']
     }
+    // Production with failover
+    return [
+      'https://skreenit.onrender.com',
+      'https://skreenit.up.railway.app'
+    ]
+  }
 
-    /**
-     * Get backend URLs based on environment
-     */
-    getBackendUrls() {
-        const host = window.location.hostname || '';
-        const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '';
+  getCurrentUrl() {
+    return this.backendUrls[this.currentUrlIndex]
+  }
 
-        if (isLocal) {
-            // Local development
-            return [
-                'http://localhost:8000'
-            ];
-        } else {
-            // Production with failover
-            return [
-                'https://aiskreenit.onrender.com',
-                'https://skreenit.up.railway.app'
-            ];
+  switchToNextUrl() {
+    this.currentUrlIndex = (this.currentUrlIndex + 1) % this.backendUrls.length
+    console.log(`Switched to backend URL: ${this.getCurrentUrl()}`)
+  }
+
+  // Internal fetch with timeout (AbortController)
+  async fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const resp = await fetch(url, { ...options, signal: controller.signal })
+      return resp
+    } finally {
+      clearTimeout(id)
+    }
+  }
+  // Core request with retries and failover
+  async request(endpoint, options = {}) {
+    const { method = 'GET', body = null, headers = {}, timeout = this.requestTimeout } = options
+    const token = localStorage.getItem('skreenit_token') || null
+
+    const isFormData = (typeof FormData !== 'undefined') && body instanceof FormData
+    const finalHeaders = { ...headers }
+    if (!isFormData) {
+      if (body && !finalHeaders['Content-Type']) finalHeaders['Content-Type'] = 'application/json'
+    }
+    if (token) finalHeaders['Authorization'] = `Bearer ${token}`
+
+    const maxAttempts = Math.max(1, this.maxRetries)
+    let lastError = null
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const baseUrl = this.getCurrentUrl()
+      const url = `${baseUrl}${endpoint}`
+      try {
+        const resp = await this.fetchWithTimeout(url, {
+          method,
+          headers: finalHeaders,
+          body: isFormData ? body : (body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null),
+          credentials: 'include',
+        }, timeout)
+
+        // Failover only on network errors or 5xx
+        if (resp && resp.status >= 500) {
+          this.switchToNextUrl()
+          lastError = new Error(`Server error ${resp.status}`)
+          continue
         }
+        return resp
+      } catch (err) {
+        // Network/timeout error
+        lastError = err
+        this.switchToNextUrl()
+        continue
+      }
     }
+    throw lastError || new Error('Request failed')
+  }
 
-    /**
-     * Get current backend URL
-     */
-    getCurrentUrl() {
-        return this.backendUrls[this.currentUrlIndex];
+  async get(endpoint, options = {}) {
+    return this.request(endpoint, { ...options, method: 'GET' })
+  }
+
+  async post(endpoint, data = null, options = {}) {
+    return this.request(endpoint, { ...options, method: 'POST', body: data })
+  }
+
+  async put(endpoint, data = null, options = {}) {
+    return this.request(endpoint, { ...options, method: 'PUT', body: data })
+  }
+
+  async delete(endpoint, options = {}) {
+    return this.request(endpoint, { ...options, method: 'DELETE' })
+  }
+
+  // FormData upload helper (keeps Content-Type unset)
+  async uploadFile(endpoint, formData, options = {}) {
+    return this.request(endpoint, { method: 'POST', body: formData, ...options })
+  }
+
+  async healthCheck() {
+    try {
+      const response = await this.get('/health', { timeout: 5000 })
+      return response.ok
+    } catch (error) {
+      console.warn(`Health check failed for ${this.getCurrentUrl()}: ${error.message}`)
+      return false
     }
+  }
 
-    /**
-     * Switch to next backend URL (failover)
-     */
-    switchToNextUrl() {
-        this.currentUrlIndex = (this.currentUrlIndex + 1) % this.backendUrls.length;
-        console.log(`Switched to backend URL: ${this.getCurrentUrl()}`);
-    }
-
-    /**
-     * Make HTTP request with automatic failover
-     */
-    async request(endpoint, options = {}) {
-        const maxAttempts = Math.min(this.maxRetries + 1, this.backendUrls.length);
-        let lastError;
-
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            const url = `${this.getCurrentUrl()}${endpoint}`;
-
-            try {
-                console.log(`Attempting request to: ${url} (attempt ${attempt + 1}/${maxAttempts})`);
-
-                const response = await fetch(url, {
-                    timeout: this.requestTimeout,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...options.headers,
-                    },
-                    ...options
-                });
-
-                // If we get a 5xx error, try next backend
-                if (response.status >= 500) {
-                    throw new Error(`Server error: ${response.status}`);
-                }
-
-                // If we get a 4xx error (except 401, 403 which are auth issues), try next backend
-                if (response.status >= 400 && response.status !== 401 && response.status !== 403) {
-                    throw new Error(`Client error: ${response.status}`);
-                }
-
-                return response;
-
-            } catch (error) {
-                console.warn(`Request failed for ${url}:`, error.message);
-                lastError = error;
-
-                // If this isn't the last attempt, switch to next URL
-                if (attempt < maxAttempts - 1) {
-                    this.switchToNextUrl();
-                }
-            }
+  async getAllBackendStatus() {
+    const status = {}
+    for (let i = 0; i < this.backendUrls.length; i++) {
+      const originalIndex = this.currentUrlIndex
+      this.currentUrlIndex = i
+      try {
+        const isHealthy = await this.healthCheck()
+        status[this.backendUrls[i]] = {
+          healthy: isHealthy,
+          responseTime: isHealthy ? 'OK' : 'FAILED'
         }
-
-        // All backends failed
-        throw new Error(`All backend servers failed. Last error: ${lastError.message}`);
+      } catch (error) {
+        status[this.backendUrls[i]] = { healthy: false, error: error.message }
+      }
+      this.currentUrlIndex = originalIndex
     }
-
-    /**
-     * GET request
-     */
-    async get(endpoint, options = {}) {
-        return this.request(endpoint, { method: 'GET', ...options });
-    }
-
-    /**
-     * POST request
-     */
-    async post(endpoint, data = null, options = {}) {
-        const requestOptions = {
-            method: 'POST',
-            body: data ? JSON.stringify(data) : null,
-            ...options
-        };
-
-        return this.request(endpoint, requestOptions);
-    }
-
-    /**
-     * PUT request
-     */
-    async put(endpoint, data = null, options = {}) {
-        const requestOptions = {
-            method: 'PUT',
-            body: data ? JSON.stringify(data) : null,
-            ...options
-        };
-
-        return this.request(endpoint, requestOptions);
-    }
-
-    /**
-     * DELETE request
-     */
-    async delete(endpoint, options = {}) {
-        return this.request(endpoint, { method: 'DELETE', ...options });
-    }
-
-    /**
-     * Upload file with FormData
-     */
-    async uploadFile(endpoint, formData, options = {}) {
-        const requestOptions = {
-            method: 'POST',
-            body: formData,
-            ...options
-        };
-
-        // Don't set Content-Type for FormData - browser will set it with boundary
-        return this.request(endpoint, requestOptions);
-    }
-
-    /**
-     * Health check for current backend
-     */
-    async healthCheck() {
-        try {
-            const response = await this.get('/health', { timeout: 5000 });
-            return response.ok;
-        } catch (error) {
-            console.warn(`Health check failed for ${this.getCurrentUrl()}:`, error.message);
-            return false;
-        }
-    }
-
-    /**
-     * Get backend status for all URLs
-     */
-    async getAllBackendStatus() {
-        const status = {};
-
-        for (let i = 0; i < this.backendUrls.length; i++) {
-            const originalIndex = this.currentUrlIndex;
-            this.currentUrlIndex = i;
-
-            try {
-                const isHealthy = await this.healthCheck();
-                status[this.backendUrls[i]] = {
-                    healthy: isHealthy,
-                    responseTime: isHealthy ? 'OK' : 'FAILED'
-                };
-            } catch (error) {
-                status[this.backendUrls[i]] = {
-                    healthy: false,
-                    error: error.message
-                };
-            }
-
-            this.currentUrlIndex = originalIndex;
-        }
-
-        return status;
-    }
+    return status
+  }
 }
 
-// Create global instance
-const backendClient = new BackendClient();
+// Global instance
+const backendClient = new BackendClient()
 
-// Export functions for easy use
+// Convenience exports
 export const backendFetch = async (endpoint, options = {}) => {
-    return backendClient.request(endpoint, options);
-};
-
+  return backendClient.request(endpoint, options)
+}
 export const backendGet = async (endpoint, options = {}) => {
-    return backendClient.get(endpoint, options);
-};
-
+  return backendClient.get(endpoint, options)
+}
 export const backendPost = async (endpoint, data = null, options = {}) => {
-    return backendClient.post(endpoint, data, options);
-};
-
+  return backendClient.post(endpoint, data, options)
+}
 export const backendPut = async (endpoint, data = null, options = {}) => {
-    return backendClient.put(endpoint, data, options);
-};
-
+  return backendClient.put(endpoint, data, options)
+}
 export const backendDelete = async (endpoint, options = {}) => {
-    return backendClient.delete(endpoint, options);
-};
-
+  return backendClient.delete(endpoint, options)
+}
 export const backendUploadFile = async (endpoint, formData, options = {}) => {
-    return backendClient.uploadFile(endpoint, formData, options);
-};
+  return backendClient.uploadFile(endpoint, formData, options)
+}
+export const backendUrl = () => backendClient.getCurrentUrl()
+export const backendHealth = async () => backendClient.healthCheck()
+export const backendStatus = async () => backendClient.getAllBackendStatus()
 
-export const backendUrl = () => {
-    return backendClient.getCurrentUrl();
-};
-
-export const backendHealth = async () => {
-    return backendClient.healthCheck();
-};
-
-export const backendStatus = async () => {
-    return backendClient.getAllBackendStatus();
-};
-
-// Global error handler for unhandled promise rejections
-window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection in backend client:', event.reason);
-    // Optionally show user-friendly error message
-});
-
-// Export the client instance for advanced usage
-export { backendClient };
-
-// Utility function to handle common response patterns
+// Response helper used by callers to parse/throw consistently
 export const handleResponse = async (response) => {
-    if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}`;
-
-        try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (e) {
-            // If we can't parse JSON, use status text
-            errorMessage = response.statusText || errorMessage;
-        }
-
-        throw new Error(errorMessage);
-    }
-
+  if (!response.ok) {
+    let errorMessage = `HTTP ${response.status}`
     try {
-        return await response.json();
-    } catch (e) {
-        // If response is not JSON, return text
-        return await response.text();
+      const errorData = await response.json()
+      errorMessage = errorData.error || errorData.message || errorMessage
+    } catch {
+      errorMessage = response.statusText || errorMessage
     }
-};
-
-// Usage examples:
-// const data = await backendGet('/api/jobs');
-// const result = await backendPost('/api/apply', applicationData);
-// const uploadResult = await backendUploadFile('/api/upload-resume', formData);
+    throw new Error(errorMessage)
+  }
+  try {
+    return await response.json()
+  } catch {
+    return await response.text()
+  }
+}
+  export { backendClient }

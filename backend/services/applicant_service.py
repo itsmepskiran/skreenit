@@ -1,8 +1,8 @@
 import time
 from typing import Any, Dict, List, Optional
 from supabase import Client
-from .supabase_client import get_client  # Assumes a factory to get a Supabase instance
-from ..utils_others.file_upload import upload_to_bucket, create_signed_url
+from services.supabase_client import get_client  # Assumes a factory to get a Supabase instance
+from utils_others.file_upload import upload_to_bucket, create_signed_url
 
 
 class ApplicantService:

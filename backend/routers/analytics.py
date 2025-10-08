@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import os
 from supabase import create_client, Client
-from ..models.analytics_models import AnalyticsEventRequest
+from models.analytics_models import AnalyticsEventRequest
 
 router = APIRouter(tags=["analytics"])
 

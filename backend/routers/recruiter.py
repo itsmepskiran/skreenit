@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException, Header, Depends
 from supabase import create_client, Client
 import os
 
-from ..models.recruiter_models import JobPostRequest, JobSkillRequest
-from ..services.recruiter_service import RecruiterService
-from ..utils_others.security import get_user_from_bearer, ensure_role
+from models.recruiter_models import JobPostRequest, JobSkillRequest
+from services.recruiter_service import RecruiterService
+from utils_others.security import get_user_from_bearer, ensure_role
 
 router = APIRouter(tags=["recruiter"])
 

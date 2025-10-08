@@ -1,3 +1,30 @@
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from routers import auth, applicant, recruiter, dashboard, analytics, notification, video
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="Skreenit API",
+    description="Backend API for Skreenit recruitment platform",
+    version="1.0.0"
+)
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "message": "Skreenit API is running"}
+
+# Include routers
+app.include_router(auth.router, prefix="/auth")
+app.include_router(applicant.router, prefix="/applicant")
+app.include_router(recruiter.router, prefix="/recruiter")
+app.include_router(dashboard.router, prefix="/dashboard")
+app.include_router(analytics.router, prefix="/analytics")
+app.include_router(notification.router, prefix="/notification")
+app.include_router(video.router, prefix="/video")
+
 # Enable CORS for frontend
 # Environment-based CORS configuration for security
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS")
@@ -14,10 +41,18 @@ else:
         "http://127.0.0.1:8000",
         "https://localhost:3000",
         "https://127.0.0.1:3000",
-        # Add your development subdomains here
+        # Production skreenit.com subdomains
+        "https://www.skreenit.com",
+        "https://skreenit.com",
+        "https://login.skreenit.com",
+        "https://auth.skreenit.com",
+        "https://applicant.skreenit.com",
+        "https://recruiter.skreenit.com",
+        "https://dashboard.skreenit.com",
+        # Development subdomains
         "http://auth.localhost:3000",
         "http://login.localhost:3000",
-        "http://dashboards.localhost:3000",
+        "http://dashboard.localhost:3000",
         "http://applicant.localhost:3000",
         "http://recruiter.localhost:3000"
     ]

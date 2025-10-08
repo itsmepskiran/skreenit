@@ -3,8 +3,8 @@ from fastapi.responses import JSONResponse
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
-from ..models.auth_models import LoginRequest
-from ..services.auth_service import AuthService
+from models.auth_models import LoginRequest
+from services.auth_service import AuthService
 from typing import Optional
 
 load_dotenv()
