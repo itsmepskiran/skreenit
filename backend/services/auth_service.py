@@ -50,8 +50,8 @@ class AuthService:
             auth_res = self.supabase.auth.admin.create_user({
                 "email": email,
                 "password": temp_password,
-                # Let Supabase send the confirmation email
-                "email_confirm": False,
+                # Enable Supabase email confirmation
+                "email_confirm": True,
                 "user_metadata": {
                     "full_name": full_name,
                     "mobile": mobile,
@@ -114,10 +114,11 @@ class AuthService:
         html = f"""
         <div>
           <p>Hi {full_name},</p>
-          <p>Welcome to Skreenit! Your account has been created.</p>
+          <p>Welcome to Skreenit! Your account has been created successfully.</p>
           <p><strong>Login Email:</strong> {email}</p>
           {('<p><strong>Your Company ID:</strong> ' + final_company_id + '</p>') if (role == 'recruiter' and final_company_id) else ''}
-          <p>Please verify your email and set your password using the link sent by Skreenit. After setting your password, you can login here:</p>
+          <p>We've sent a confirmation email to your address. Please check your inbox (and spam folder) and click the confirmation link to activate your account.</p>
+          <p>Once your email is confirmed, you can login here:</p>
           <p><a href=\"{login_url}\">{login_url}</a></p>
           <p><b>Regards,</b><br/>Team Skreenit</p>
         </div>

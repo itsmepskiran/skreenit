@@ -25,7 +25,7 @@ class BackendClient {
     }
     // Production with failover
     return [
-      'https://skreenit.onrender.com',
+      'https://aiskreenit.onrender.com',
       'https://skreenit.up.railway.app'
     ]
   }
