@@ -50,8 +50,8 @@ class AuthService:
             auth_res = self.supabase.auth.admin.create_user({
                 "email": email,
                 "password": temp_password,
-                # Enable Supabase email confirmation
-                "email_confirm": True,
+                # Supabase will send a confirmation email
+                "email_confirm": False,
                 "user_metadata": {
                     "full_name": full_name,
                     "mobile": mobile,
