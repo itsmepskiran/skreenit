@@ -3,6 +3,24 @@
 import { supabase } from './supabase-config.js'
 import { backendUploadFile, handleResponse, backendUrl } from './backend-client.js'
 
+// -------- Auth State Handling --------
+
+// Listen for authentication events (e.g., after email confirmation)
+// This ensures the session is captured when the user lands on the update-password page.
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN') {
+    // User has signed in (e.g., via the confirmation link).
+    // Persist the session to make it available for the password update.
+    await persistSessionToLocalStorage();
+    console.log('User signed in, session persisted.');
+
+  } else if (event === 'PASSWORD_RECOVERY') {
+    // This event is fired when the user is redirected from a password recovery link
+    // The session is now active, and the user can update their password.
+    console.log('Password recovery session started.');
+  }
+});
+
 // -------- Utilities --------
 
 // Safe notification fallback (prevents crashes if a shared UI util isn't loaded)
@@ -133,7 +151,6 @@ export async function handleRegistrationSubmit(event) {
     const bfd = new FormData()
     bfd.append('full_name', full_name)
     bfd.append('email', email)
-    bfd.append('mobile', mobile)
     bfd.append('location', location)
     bfd.append('role', role)
     bfd.append('company_name', company_name || '')
@@ -146,7 +163,7 @@ export async function handleRegistrationSubmit(event) {
     // UX: do not redirect; let page show thank-you state
     notify('Registration successful! Please check your email to verify your account.', 'success')
     return true
-  } catch (err) {
+{{ ... }}
     console.error('Registration error:', err)
     notify(err.message || 'Registration failed. Please try again.', 'error')
     return false
