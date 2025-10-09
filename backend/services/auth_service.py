@@ -131,7 +131,12 @@ class AuthService:
         """
         logging.info(f"Sending custom welcome email to {email} via Resend.")
         try:
-            email_res = send_email(to=email, subject="Welcome to Skreenit", html=html)
+            email_res = send_email(
+                to=email,
+                subject="Welcome to Skreenit",
+                html=html,
+                email_type="welcome"
+            )
             logging.info(f"Custom welcome email result for {email}: {email_res}")
         except Exception as e:
             email_res = {"error": str(e)}
@@ -157,7 +162,7 @@ class AuthService:
         </div>
         """
         try:
-            res = send_email(to=email, subject="Skreenit Password Updated", html=html)
+            res = send_email(to=email, subject="Skreenit Password Updated", html=html, email_type="info")
             return {"email_sent": True, "response": res}
         except Exception as e:
             return {"email_sent": False, "error": str(e)}
@@ -195,7 +200,7 @@ class AuthService:
         </div>
         """
         try:
-            res = send_email(to=email, subject="Your Skreenit Company ID", html=html)
+            res = send_email(to=email, subject="Your Skreenit Company ID", html=html, email_type="info")
             return {"email_sent": True, "response": res}
         except Exception as e:
             return {"email_sent": False, "error": str(e)}

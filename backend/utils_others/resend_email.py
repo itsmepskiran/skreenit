@@ -9,11 +9,15 @@ def send_email(
     to: Union[str, List[str]],
     subject: str,
     html: str,
-    from_addr: Optional[str] = None
+    from_addr: Optional[str] = None,
+    email_type: str = "default"
 ) -> dict:
     """
     Utility to send email via the Resend API.
     Raises EmailError on failure.
+
+    Args:
+        email_type: Type of email ("welcome", "verification", "info", "support", "noreply")
     """
     try:
         import resend
@@ -28,7 +32,18 @@ def send_email(
 
     if isinstance(to, str):
         to = [to]
-    from_addr = from_addr or os.getenv("EMAIL_FROM", "info@skreenit.com")
+
+    # Use different sender addresses based on email type
+    if from_addr is None:
+        email_senders = {
+            "welcome": os.getenv("EMAIL_WELCOME", "welcome@skreenit.com"),
+            "verification": os.getenv("EMAIL_VERIFICATION", "verification@skreenit.com"),
+            "info": os.getenv("EMAIL_INFO", "info@skreenit.com"),
+            "support": os.getenv("EMAIL_SUPPORT", "support@skreenit.com"),
+            "noreply": os.getenv("EMAIL_NOREPLY", "do-not-reply@skreenit.com"),
+            "default": os.getenv("EMAIL_FROM", "info@skreenit.com")
+        }
+        from_addr = email_senders.get(email_type, email_senders["default"])
 
     try:
         return resend.Emails.send({
