@@ -44,6 +44,7 @@ class AuthService:
                  resume_filename: Optional[str] = None) -> Dict[str, Any]:
         import secrets, time
 
+        ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*"
         def gen_temp(length: int = 12) -> str:
             return "".join(secrets.choice(ALPHABET) for _ in range(length))
 
