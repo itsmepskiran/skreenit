@@ -44,35 +44,33 @@ class AuthService:
                  resume_filename: Optional[str] = None) -> Dict[str, Any]:
         import secrets, time
 
-        ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*"
         def gen_temp(length: int = 12) -> str:
             return "".join(secrets.choice(ALPHABET) for _ in range(length))
 
         temp_password = gen_temp(12)
 
-        logging.info(f"Attempting to create user {email} in Supabase with email_confirm=False")
+        logging.info(f"Attempting to create user {email} in Supabase")
         try:
-            auth_res = self.supabase.auth.admin.create_user({
+            # Use regular signup instead of admin API for automatic email confirmation
+            auth_res = self.supabase.auth.sign_up({
                 "email": email,
                 "password": temp_password,
-                # Supabase will send a confirmation email
-                "email_confirm": False,
-                "user_metadata": {
-                    "full_name": full_name,
-                    "mobile": mobile,
-                    "location": location,
-                    "role": role,
-                    "first_login": True,
-                    **({"company_id": company_id} if company_id else {}),
-                },
+                "options": {
+                    "data": {
+                        "full_name": full_name,
+                        "mobile": mobile,
+                        "location": location,
+                        "role": role,
+                        "first_login": True,
+                        **({"company_id": company_id} if company_id else {}),
+                    }
+                }
             })
-            logging.info(f"Supabase user creation response for {email}: {auth_res}")
         except Exception as ce:
             msg = str(ce)
             if "User already registered" in msg or "already exists" in msg:
                 raise ValueError("User already registered")
             raise
-
         user = getattr(auth_res, "user", None)
         user_id = user.id if user else None
         if not user_id:
