@@ -128,26 +128,7 @@ export async function handleRegistrationSubmit(event) {
     if (!emailOk) throw new Error('Please enter a valid email address.')
     if (mobile.length < 10) throw new Error('Please enter a valid mobile number.')
 
-    // Supabase requires a password for signUp; use a strong temporary one
-    const tempPassword = generateTempPassword()
-    const { error: signUpErr } = await supabase.auth.signUp({
-      email,
-      password: tempPassword,
-      options: {
-        // After user verifies from email, they land here to set a real password
-        emailRedirectTo: 'https://login.skreenit.com/update-password.html',
-        data: {
-          full_name,
-          role,
-          mobile,
-          location,
-          company_name: company_name || null
-        }
-      }
-    })
-    if (signUpErr) throw new Error(`Registration failed: ${signUpErr.message}`)
-
-    // Persist basic details to backend
+    // The backend now handles the Supabase signUp call. The frontend just sends the data.
     const bfd = new FormData()
     bfd.append('full_name', full_name)
     bfd.append('email', email)

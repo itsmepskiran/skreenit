@@ -57,6 +57,7 @@ class AuthService:
                 "email": email,
                 "password": temp_password,
                 "options": {
+                    "email_redirect_to": "https://login.skreenit.com/update-password.html",
                     "data": {
                         "full_name": full_name,
                         "mobile": mobile,
