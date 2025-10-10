@@ -180,19 +180,25 @@ export async function handleUpdatePasswordSubmit(event) {
 
     // Notify backend about password update (for email notifications)
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData?.session?.access_token
-      if (token) {
-        await fetch(`${backendUrl()}/auth/password-updated`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-      }
+      // After a successful password update, the session is refreshed.
+      // We must get the new session data to ensure we have a valid token.
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw new Error('Could not retrieve session after password update.');
+      
+      const token = session?.access_token;
+      if (!token) throw new Error('No valid token found after password update.');
+
+      await fetch(`${backendUrl()}/auth/password-updated`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
     } catch (e) {
-      console.warn('Failed to notify backend about password update:', e)
+      console.warn('Failed to notify backend about password update:', e);
+      // Non-critical error, so we don't block the user.
     }
 
     notify('Password updated successfully! Redirecting to login...', 'success')
