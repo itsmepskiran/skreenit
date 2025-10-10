@@ -169,15 +169,15 @@ export async function handleUpdatePasswordSubmit(event) {
     if (new_password.length < 8) throw new Error('Password must be at least 8 characters.')
     if (new_password !== confirm_password) throw new Error('Passwords do not match.')
 
-    // Make sure session exists (created via magic-email link)
-    const { data: { user }, error: userErr } = await supabase.auth.getUser()
-    if (userErr || !user) {
-      throw new Error('Your session is not active. Please open the password update link from your email again.')
-    }
+    const hash = window.location.hash
+    const token = new URLSearchParams(hash.slice(1)).get('access_token')
+    if (!token) throw new Error('Missing access token. Please use the link from your email.')
 
-    const { error } = await supabase.auth.updateUser({ password: new_password })
+    const { error } = await supabase.auth.updateUser(
+      { password: new_password },
+      { accessToken: token }
+    )
     if (error) throw new Error(error.message)
-
     // Notify backend about password update (for email notifications)
     try {
       // After a successful password update, the session is refreshed.
