@@ -23,14 +23,29 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
 // -------- Utilities --------
 
-// Safe notification fallback (prevents crashes if a shared UI util isn't loaded)
-function notify(message, type = 'info') {
-  if (typeof window.showNotification === 'function') {
-    try { window.showNotification(message, type) } catch { console.log('[Notice]', message) }
-  } else {
-    console[type === 'error' ? 'error' : 'log']('[Notice]', message)
+// Send email to recruiter with user ID and Company ID after email confirmation
+async function sendRecruiterEmail(user, companyId) {
+  if (user?.user_metadata?.role !== 'recruiter') return;
+
+  try {
+    await fetch(`${backendUrl()}/api/send-recruiter-email`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('skreenit_token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: user.id,
+        companyId: companyId,
+        email: user.email,
+      }),
+    });
+    console.log('Recruiter credentials email sent successfully.');
+  } catch (error) {
+    console.error('Error sending recruiter email:', error);
   }
 }
+
 
 // Generate a strong temporary password for the initial Supabase signUp
 function generateTempPassword(length = 16) {

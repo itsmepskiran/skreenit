@@ -25,19 +25,22 @@ class RecruiterService:
         return res.data
 
     def update_job(self, job_id: str, update_data: Dict[str, Any], recruiter_id: Optional[str] = None) -> Dict[str, Any]:
-        # Optional: Add permission logic to ensure recruiter_id can edit job
-        res = self.supabase.table("jobs").update(update_data).eq("id", job_id).execute()
+        query = self.supabase.table("jobs").update(update_data).eq("id", job_id)
+        if recruiter_id:
+            query = query.eq("created_by", recruiter_id)
+        res = query.execute()
         if getattr(res, "error", None):
             raise Exception(f"Update job error: {res.error}")
-        return res.data
+        return {"ok": True, "data": res.data}
 
-    def delete_job(self, job_id: str) -> Dict[str, Any]:
-        res = self.supabase.table("jobs").delete().eq("id", job_id).execute()
+    def delete_job(self, job_id: str, recruiter_id: Optional[str] = None) -> Dict[str, Any]:
+        query = self.supabase.table("jobs").delete().eq("id", job_id)
+        if recruiter_id:
+            query = query.eq("created_by", recruiter_id)
+        res = query.execute()
         if getattr(res, "error", None):
             raise Exception(f"Delete job error: {res.error}")
-        return res.data
-
-    # Add methods for company, interview questions, and skills as needed
+        return {"ok": True, "data": res.data}
 
     def list_companies(self) -> List[Dict[str, Any]]:
         res = self.supabase.table("companies").select("id,name,website").order("name").execute()
@@ -48,7 +51,8 @@ class RecruiterService:
     def create_company(self, name: str, created_by: str, description: Optional[str] = None, website: Optional[str] = None) -> Dict[str, Any]:
         import random, string
         base = ''.join(ch for ch in name if ch.isalpha()).upper()
-        base = (base[:8] if len(base) >= 8 else base + ''.join(random.choice(string.ascii_uppercase) for _ in range(8 - len(base)))) or 'COMPANYID'
+        if len(base) < 8:
+            base = base + ''.join(random.choice(string.ascii_uppercase) for _ in range(8 - len(base)))
         company_id = base[:8]
         payload = {
             "id": company_id,
@@ -63,8 +67,6 @@ class RecruiterService:
         return {"company_id": company_id, "company": res.data}
 
     def upsert_profile(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        # Expected keys: user_id, company_id, fullname, email, phone?, position?, linkedin_url?
-        # Upsert on user_id
         if not payload.get("user_id"):
             raise Exception("user_id is required")
         res = (
@@ -75,4 +77,9 @@ class RecruiterService:
         )
         if getattr(res, "error", None):
             raise Exception(f"Upsert recruiter profile error: {res.error}")
+        # Mark recruiter onboarded in router (done there), or here if you prefer:
+        # try:
+        #     self.supabase.auth.admin.update_user_by_id(payload["user_id"], {"user_metadata": {"onboarded": True}})
+        # except Exception:
+        #     pass
         return {"status": "saved", "profile": res.data}

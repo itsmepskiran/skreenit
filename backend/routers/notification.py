@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException
 from supabase import create_client, Client
 import os
 from models.notification_models import NotificationRequest
+from datetime import datetime
 
 router = APIRouter(tags=["notification"])
 
@@ -14,13 +15,13 @@ def get_supabase_client() -> Client:
 
 @router.post("/notify")
 def send_notification(notification: NotificationRequest):
-    client = get_supabase_client()  # always initialize for route
+    client = get_supabase_client()
 
     notif = notification.dict()
-    # Insert notification or handle duplicate logic here!
-    result = client.table("notifications").insert(notif).execute()
+    notif["created_at"] = datetime.utcnow().isoformat()
 
+    result = client.table("notifications").insert(notif).execute()
     if getattr(result, "error", None):
         raise HTTPException(status_code=400, detail=f"Notification error: {result.error}")
 
-    return {"ok": True, "notification": result.data}
+    return {"ok": True, "data": result.data}

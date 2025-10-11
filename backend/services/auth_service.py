@@ -1,12 +1,12 @@
 import os
 import httpx
 import logging
-
-logging.basicConfig(level=logging.INFO)
 from typing import Optional, Dict, Any
 from supabase import Client
 from services.supabase_client import get_client
 from utils_others.resend_email import send_email
+
+logging.basicConfig(level=logging.INFO)
 
 class AuthService:
     def __init__(self, client: Optional[Client] = None) -> None:
@@ -21,7 +21,7 @@ class AuthService:
         })
         if not getattr(res, "session", None):
             raise ValueError("Invalid credentials")
-        return {"access_token": res.session.access_token, "user": res.user}
+        return {"ok": True, "data": {"access_token": res.session.access_token, "user": res.user}}
 
     def validate_token(self, bearer_token: str) -> Dict[str, Any]:
         headers = {
@@ -42,17 +42,18 @@ class AuthService:
                  company_name: Optional[str] = None,
                  resume_bytes: Optional[bytes] = None,
                  resume_filename: Optional[str] = None) -> Dict[str, Any]:
-        import secrets, time
+        import secrets, time, random, string
 
         ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*"
         def gen_temp(length: int = 12) -> str:
-            return "".join(secrets.choice(ALPHABET) for _ in range(length))
+            return "".join(secrets.choice(ALPHABET) for _ in range(length)
+
+        )
 
         temp_password = gen_temp(12)
 
         logging.info(f"Attempting to create user {email} in Supabase")
         try:
-            # Use regular signup instead of admin API for automatic email confirmation
             auth_res = self.supabase.auth.sign_up({
                 "email": email,
                 "password": temp_password,
@@ -63,8 +64,10 @@ class AuthService:
                         "mobile": mobile,
                         "location": location,
                         "role": role,
-                        "first_login": True,
+                        "onboarded": False,
+                        "password_set": False,
                         **({"company_id": company_id} if company_id else {}),
+                        **({"company_name": company_name} if company_name else {}),
                     }
                 }
             })
@@ -73,6 +76,7 @@ class AuthService:
             if "User already registered" in msg or "already exists" in msg:
                 raise ValueError("User already registered")
             raise
+
         user = getattr(auth_res, "user", None)
         user_id = user.id if user else None
         if not user_id:
@@ -86,7 +90,6 @@ class AuthService:
                 resume_path = f"{user_id}/{ts}-{safe_name}"
                 up = self.supabase.storage.from_("resumes").upload(resume_path, resume_bytes)
                 if getattr(up, "error", None):
-                    # non-fatal
                     resume_path = None
             except Exception:
                 resume_path = None
@@ -94,9 +97,9 @@ class AuthService:
         # If recruiter and company_name provided but company_id missing, create company and update user metadata
         final_company_id = company_id
         if role == "recruiter" and (not final_company_id) and (company_name or "").strip():
-            import random, string
             base = ''.join(ch for ch in (company_name or "") if ch.isalpha()).upper()
-            base = (base[:8] if len(base) >= 8 else base + ''.join(random.choice(string.ascii_uppercase) for _ in range(8 - len(base)))) or 'COMPANYID'
+            if len(base) < 8:
+                base = base + ''.join(random.choice(string.ascii_uppercase) for _ in range(8 - len(base)))
             gen_id = base[:8]
             try:
                 comp_ins = self.supabase.table("companies").insert({
@@ -107,13 +110,19 @@ class AuthService:
                 if getattr(comp_ins, "error", None):
                     raise Exception(comp_ins.error)
                 final_company_id = gen_id
-                # update user metadata with company_id
                 try:
-                    _ = self.supabase.auth.admin.update_user_by_id(user_id, {"user_metadata": {"company_id": final_company_id}})
+                    _ = self.supabase.auth.admin.update_user_by_id(user_id, {
+                        "user_metadata": {
+                            "role": "recruiter",
+                            "company_id": final_company_id,
+                            "company_name": company_name,
+                            "onboarded": False,
+                            "password_set": False,
+                        }
+                    })
                 except Exception:
                     pass
             except Exception:
-                # fall back to no company id if insert fails
                 final_company_id = None
 
         login_url = os.getenv("FRONTEND_BASE_URL", "https://login.skreenit.com")
@@ -155,7 +164,7 @@ class AuthService:
         display_name = full_name or (email.split("@")[0])
         html = f"""
         <div>
-          <p>Hi {full_name},</p>
+          <p>Hi {display_name},</p>
           <p>Your Skreenit account password was updated successfully.</p>
           <p>If you did not initiate this change, please contact support immediately.</p>
           <p><b>Regards,</b><br/>Team Skreenit</p>
@@ -168,12 +177,10 @@ class AuthService:
             return {"email_sent": False, "error": str(e)}
 
     def get_recruiter_company_info(self, user_id: str) -> Dict[str, Any]:
-        # Try recruiter_profiles first
         prof = self.supabase.table("recruiter_profiles").select("company_id").eq("user_id", user_id).single().execute()
         company_id = None
         if getattr(prof, "data", None) and prof.data:
             company_id = prof.data.get("company_id")
-        # Fallback to public auth user metadata if needed (admin API)
         if not company_id:
             try:
                 user = self.supabase.auth.admin.get_user_by_id(user_id)

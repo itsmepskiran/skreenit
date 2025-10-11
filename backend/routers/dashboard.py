@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from supabase import create_client, Client
+import os
 from typing import Optional
 from models.dashboard_models import DashboardSummary
-import os
+from utils_others.security import get_user_from_bearer
 
 router = APIRouter(tags=["dashboard"])
 
-# Utility for Supabase client (adjust import as per your project)
 def get_supabase_client() -> Client:
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
@@ -14,34 +14,46 @@ def get_supabase_client() -> Client:
         raise RuntimeError("Supabase credentials are not set")
     return create_client(supabase_url, supabase_key)
 
+def require_user(authorization: str = Header(default=None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = authorization.replace("Bearer ", "")
+    try:
+        user = get_user_from_bearer(token)
+        return user
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
 @router.get("/summary/{user_id}")
-def get_dashboard_summary(user_id: str, client: Client = Depends(get_supabase_client)):
-    """
-    Provides a dashboard summary highly specific to the user's role.
-    E.g., jobs posted, applications, or relevant analytics.
-    """
-    # This is a sample implementation—you should tailor logic to your needs.
+def get_dashboard_summary(user_id: str, client: Client = Depends(get_supabase_client), user: dict = Depends(require_user)):
     user_resp = client.table("users").select("role").eq("id", user_id).single().execute()
-    if getattr(user_resp, "error", None):
+    if getattr(user_resp, "error", None) or not user_resp.data:
         raise HTTPException(status_code=404, detail="User not found")
     role = user_resp.data.get("role")
 
     summary = {"role": role, "jobs": [], "applications": []}
 
     if role == "recruiter":
-        jobs_resp = client.table("jobs").select("*").eq("created_by", user_id).execute()
-        summary["jobs"] = jobs_resp.data if getattr(jobs_resp, "data", None) else []
+        jobs_resp = client.table("jobs").select("id, title, status, created_at").eq("created_by", user_id).execute()
+        jobs = jobs_resp.data or []
+        summary["jobs"] = jobs
 
-        applications_resp = client.table("job_applications").select("*").in_("job_id", [job["id"] for job in summary["jobs"]]).execute()
-        summary["applications"] = applications_resp.data if getattr(applications_resp, "data", None) else []
+        job_ids = [job["id"] for job in jobs]
+        if job_ids:
+            applications_resp = client.table("job_applications").select("id, status, ai_score, candidate_id, applied_at, job_id").in_("job_id", job_ids).execute()
+            applications = applications_resp.data or []
+        else:
+            applications = []
+        summary["applications"] = applications
 
     elif role == "candidate":
-        applications_resp = client.table("job_applications").select("*").eq("candidate_id", user_id).execute()
-        summary["applications"] = applications_resp.data if getattr(applications_resp, "data", None) else []
+        applications_resp = client.table("job_applications").select("id, status, ai_score, applied_at, job_id").eq("candidate_id", user_id).execute()
+        applications = applications_resp.data or []
+        summary["applications"] = applications
 
-        jobs_applied = [app["job_id"] for app in summary["applications"]]
-        jobs_resp = client.table("jobs").select("*").in_("id", jobs_applied).execute()
-        summary["jobs"] = jobs_resp.data if getattr(jobs_resp, "data", None) else []
+        job_ids = [app["job_id"] for app in applications] if applications else []
+        jobs_resp = client.table("jobs").select("id, title, company, location, job_type, status").in_("id", job_ids).execute() if job_ids else type("obj", (), {"data": []})()
+        summary["jobs"] = jobs_resp.data or []
 
     else:
         raise HTTPException(status_code=400, detail="Unknown user role")

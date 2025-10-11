@@ -11,6 +11,7 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
 router = APIRouter(tags=["auth"])
 auth_service = AuthService(supabase)
 
@@ -46,14 +47,13 @@ async def register(
 async def login(request: LoginRequest):
     try:
         result = auth_service.login(request.email, request.password)
-        return {"ok": True, "data": result}
+        return result  # already {"ok": True, "data": {...}}
     except Exception as e:
         return JSONResponse(status_code=401, content={"ok": False, "error": str(e)})
 
 @router.post("/password-updated")
 async def password_updated(request: Request):
     try:
-        # Validate bearer token and get user info
         auth_header: Optional[str] = request.headers.get("authorization")
         if not auth_header or not auth_header.lower().startswith("bearer "):
             return JSONResponse(status_code=401, content={"ok": False, "error": "Missing Authorization header"})
@@ -65,13 +65,11 @@ async def password_updated(request: Request):
         role = metadata.get("role")
         full_name = metadata.get("full_name") or None
 
-        # Always send password changed notification
         try:
             _ = auth_service.notify_password_changed(email=email, full_name=full_name)
         except Exception:
             pass
 
-        # If recruiter, also send company name and ID
         if role == "recruiter":
             try:
                 company = auth_service.get_recruiter_company_info(user.get("id"))
@@ -81,6 +79,14 @@ async def password_updated(request: Request):
                     _ = auth_service.send_recruiter_company_email(email=email, full_name=full_name, company_id=cid, company_name=cname)
             except Exception:
                 pass
+
+        # Mark password_set = True
+        try:
+            supabase.auth.admin.update_user_by_id(user.get("id"), {
+                "user_metadata": {**(metadata or {}), "password_set": True}
+            })
+        except Exception:
+            pass
 
         return {"ok": True}
     except Exception as e:

@@ -14,7 +14,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 service = RecruiterService(supabase)
 
-# --- Auth dependency ---
 def require_recruiter(authorization: str = Header(default=None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
@@ -31,35 +30,37 @@ def require_recruiter(authorization: str = Header(default=None)):
 @router.post("/post-job")
 def post_job(payload: JobPostRequest, user: dict = Depends(require_recruiter)):
     try:
-        return service.post_job(payload.dict())
+        data = payload.dict()
+        data["created_by"] = user["id"]
+        return {"ok": True, "data": service.post_job(data)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Job post failed: {str(e)}")
 
 @router.get("/jobs")
 def list_jobs(user: dict = Depends(require_recruiter)):
     try:
-        return service.list_jobs()
+        return {"ok": True, "data": service.list_jobs()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not fetch jobs: {str(e)}")
 
 @router.get("/job/{job_id}")
 def get_job(job_id: str, user: dict = Depends(require_recruiter)):
     try:
-        return service.get_job(job_id)
+        return {"ok": True, "data": service.get_job(job_id)}
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Job not found: {str(e)}")
 
 @router.put("/job/{job_id}")
 def update_job(job_id: str, payload: JobPostRequest, user: dict = Depends(require_recruiter)):
     try:
-        return service.update_job(job_id, payload.dict(exclude_unset=True))
+        return service.update_job(job_id, payload.dict(exclude_unset=True), recruiter_id=user["id"])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Job update failed: {str(e)}")
 
 @router.delete("/job/{job_id}")
 def delete_job(job_id: str, user: dict = Depends(require_recruiter)):
     try:
-        return service.delete_job(job_id)
+        return service.delete_job(job_id, recruiter_id=user["id"])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Job delete failed: {str(e)}")
 
@@ -71,7 +72,7 @@ def create_company(payload: dict, user: dict = Depends(require_recruiter)):
             raise HTTPException(status_code=400, detail="name is required")
         desc = payload.get("description")
         website = payload.get("website")
-        return service.create_company(name=name, created_by=user["id"], description=desc, website=website)
+        return {"ok": True, "data": service.create_company(name=name, created_by=user["id"], description=desc, website=website)}
     except HTTPException:
         raise
     except Exception as e:
@@ -80,14 +81,13 @@ def create_company(payload: dict, user: dict = Depends(require_recruiter)):
 @router.get("/companies")
 def list_companies(user: dict = Depends(require_recruiter)):
     try:
-        return {"companies": service.list_companies()}
+        return {"ok": True, "data": service.list_companies()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch companies: {str(e)}")
 
 @router.post("/profile")
 def create_recruiter_profile(payload: dict, user: dict = Depends(require_recruiter)):
     try:
-        # Accept flexible payload from frontend and map to profile
         user_id = payload.get("user_id") or user.get("id")
         if not user_id:
             raise HTTPException(status_code=400, detail="user_id is required")
@@ -95,16 +95,15 @@ def create_recruiter_profile(payload: dict, user: dict = Depends(require_recruit
         company_id = payload.get("company_id")
         company_name = (payload.get("company_name") or "").strip()
         if not company_id and company_name:
-            # Try to find company by name (case-insensitive)
             try:
                 comps = service.list_companies()
                 found = next((c for c in comps if (c.get("name") or "").strip().lower() == company_name.lower()), None)
             except Exception:
                 found = None
             if found:
-                company_id = found.get("id")
+                company_id = found.get("id") or found.get("company_id")
             else:
-                created = service.create_company(name=company_name, created_by=user_id, website=payload.get("company_website"))
+                created = service.create_company(name=company_name, created_by=user_id, description=payload.get("company_description"), website=payload.get("company_website"))
                 company_id = created.get("company_id")
 
         prof_payload = {
@@ -116,7 +115,14 @@ def create_recruiter_profile(payload: dict, user: dict = Depends(require_recruit
             "position": payload.get("position"),
             "linkedin_url": payload.get("linkedin_url"),
         }
-        return service.upsert_profile(prof_payload)
+        profile = service.upsert_profile(prof_payload)
+
+        try:
+            supabase.auth.admin.update_user_by_id(user_id, {"user_metadata": {"onboarded": True}})
+        except Exception:
+            pass
+
+        return {"ok": True, "data": profile}
     except HTTPException:
         raise
     except Exception as e:
@@ -125,7 +131,7 @@ def create_recruiter_profile(payload: dict, user: dict = Depends(require_recruit
 @router.get("/profile/{user_id}")
 def get_recruiter_profile(user_id: str, user: dict = Depends(require_recruiter)):
     try:
-        return service.get_profile(user_id)
+        return {"ok": True, "data": service.get_profile(user_id)} if hasattr(service, "get_profile") else {"ok": True, "data": {"user_id": user_id}}
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Recruiter profile not found: {str(e)}")
 
@@ -135,7 +141,7 @@ def add_job_skill(job_id: str, payload: JobSkillRequest, user: dict = Depends(re
         res = supabase.table("job_skills").insert(payload.dict()).execute()
         if getattr(res, "error", None):
             raise Exception(res.error)
-        return {"status": "added", "skill": res.data}
+        return {"ok": True, "data": res.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to add skill: {str(e)}")
 
@@ -145,8 +151,6 @@ def list_job_skills(job_id: str, user: dict = Depends(require_recruiter)):
         res = supabase.table("job_skills").select("*").eq("job_id", job_id).execute()
         if getattr(res, "error", None):
             raise Exception(res.error)
-        return {"skills": res.data}
+        return {"ok": True, "data": res.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch skills: {str(e)}")
-
-# Additional endpoints (questions, resume URL, applicants, companies, etc.) can be modeled similarly.

@@ -5,9 +5,6 @@ from typing import Any, Dict, List, Optional
 
 from models.applicant_models import (
     ApplicationRequest,
-    CandidateEducationRequest,
-    CandidateExperienceRequest,
-    CandidateSkillRequest
 )
 from services.applicant_service import ApplicantService
 from utils_others.security import get_user_from_bearer, ensure_role
@@ -38,7 +35,7 @@ def apply_job(payload: ApplicationRequest, user: dict = Depends(require_candidat
         data = payload.dict()
         data["candidate_id"] = user["id"]
         video_info = applicant_service.get_general_video(user["id"])
-        status = data.get("status") or "submitted"
+        status = "submitted"
         if not video_info or video_info.get("status") == "missing":
             status = "video_pending"
         ai_analysis = data.get("ai_analysis") or {}
@@ -52,7 +49,7 @@ def apply_job(payload: ApplicationRequest, user: dict = Depends(require_candidat
         res = supabase.table("job_applications").insert(insert_payload).execute()
         if getattr(res, "error", None):
             raise Exception(res.error)
-        return {"status": "applied", "data": res.data}
+        return {"ok": True, "data": res.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Application failed: {str(e)}")
 
@@ -74,7 +71,6 @@ def get_resume_signed_url(candidate_id: str, user: dict = Depends(require_candid
     try:
         return applicant_service.get_resume_url(candidate_id)
     except Exception as e:
-        # Map not found to 404, other errors to 500
         msg = str(e)
         if "not found" in msg.lower():
             raise HTTPException(status_code=404, detail="Resume not found")
@@ -92,30 +88,30 @@ def get_profile(request: Request, user: dict = Depends(require_candidate)):
         user_res = httpx.get(f"{SUPABASE_URL}/auth/v1/user", headers=headers)
         user_res.raise_for_status()
         user_data = user_res.json()
-        profile = supabase.table("candidate_profiles").select("*").eq("id", user_data["id"]).execute()
+        profile = supabase.table("candidate_profiles").select("*").eq("user_id", user_data["id"]).execute()
         if not profile.data:
             raise HTTPException(status_code=404, detail="Candidate profile not found")
-        return {"user": user_data, "profile": profile.data}
+        return {"ok": True, "data": {"user": user_data, "profile": profile.data}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Profile fetch failed: {str(e)}")
 
 @router.get("/profile/{candidate_id}")
-def get_candidate_profile(candidate_id: str):
+def get_candidate_profile(candidate_id: str, user: dict = Depends(require_candidate)):
     try:
-        res = supabase.table("candidate_profiles").select("*").eq("id", candidate_id).single().execute()
+        res = supabase.table("candidate_profiles").select("*").eq("user_id", candidate_id).single().execute()
         if getattr(res, "error", None):
             raise Exception(res.error)
-        return {"profile": res.data}
+        return {"ok": True, "data": {"profile": res.data}}
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Candidate profile not found: {str(e)}")
 
 @router.put("/profile/{candidate_id}")
 def update_candidate_profile(candidate_id: str, payload: dict, user: dict = Depends(require_candidate)):
     try:
-        res = supabase.table("candidate_profiles").update(payload).eq("id", candidate_id).execute()
+        res = supabase.table("candidate_profiles").update(payload).eq("user_id", candidate_id).execute()
         if getattr(res, "error", None):
             raise Exception(res.error)
-        return {"status": "updated", "profile": res.data}
+        return {"ok": True, "data": {"profile": res.data}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Profile update failed: {str(e)}")
 
@@ -132,6 +128,10 @@ def save_detailed_form(payload: Dict[str, Any] = Body(...), user: dict = Depends
             experience=payload.get("experience") or [],
             skills=payload.get("skills") or [],
         )
+        try:
+            supabase.auth.admin.update_user_by_id(candidate_id, {"user_metadata": {"onboarded": True}})
+        except Exception:
+            pass
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save detailed form: {str(e)}")
@@ -139,6 +139,6 @@ def save_detailed_form(payload: Dict[str, Any] = Body(...), user: dict = Depends
 @router.get("/detailed-form/{candidate_id}")
 def get_detailed_form(candidate_id: str, user: dict = Depends(require_candidate)):
     try:
-        return applicant_service.get_detailed_form(candidate_id)
+        return {"ok": True, "data": applicant_service.get_detailed_form(candidate_id)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch detailed form: {str(e)}")
