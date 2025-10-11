@@ -203,13 +203,17 @@ export async function handleUpdatePasswordSubmit(event) {
       const token = session?.access_token;
       if (!token) throw new Error('No valid token found after password update.');
 
-      await fetch(`${backendUrl()}/auth/password-updated`, {
+      const response = await fetch(`${backendUrl()}/auth/password-updated`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
+      const result = await response.json();
+      if (!result || result.ok === false) {
+        throw new Error(result?.error || 'Failed to update password on backend.');
+      }
 
     } catch (e) {
       console.warn('Failed to notify backend about password update:', e);

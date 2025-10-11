@@ -80,14 +80,7 @@ async def password_updated(request: Request):
             except Exception:
                 pass
 
-        # Mark password_set = True
-        try:
-            supabase.auth.admin.update_user_by_id(user.get("id"), {
-                "user_metadata": {**(metadata or {}), "password_set": True}
-            })
-        except Exception:
-            pass
-
-        return {"ok": True}
+        # After updating metadata, return user info for frontend to handle login
+        return {"ok": True, "data": {"user": user, "message": "Password updated successfully. Please log in."}}
     except Exception as e:
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
