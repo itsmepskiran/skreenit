@@ -65,6 +65,14 @@
             Sign In
           </button>
         </div>
+        <!-- First-Time Login Popup -->
+        <div id="firstTimePopup" class="popup-overlay" style="display: none;">
+          <div class="popup-content">
+            <h3>Welcome! First Time Here?</h3>
+            <p>It looks like this is your first login. Please register to get started.</p>
+            <button class="btn btn-primary" onclick="window.location.href='https://auth.skreenit.com/registration.html'">Register Now</button>
+          </div>
+        </div>
         <div class="auth-actions">
           <a href='https://auth.skreenit.com/registration.html'>
             <i class="fas fa-user-plus"></i>
@@ -91,6 +99,26 @@
     }
     roleSel.addEventListener('change', toggleRecruiter)
     toggleRecruiter()
+    // First-time login check and role-based redirect
+    const loginForm = document.getElementById('loginForm')
+    loginForm.addEventListener('submit', async function(e) {
+      e.preventDefault()
+      const role = document.getElementById('role').value
+      const email = document.getElementById('email').value
+      const password = document.getElementById('password').value
+      // Simulate first-time check (replace with backend call)
+      const isFirstTime = localStorage.getItem('first_login') === 'true'
+      if (isFirstTime) {
+        document.getElementById('firstTimePopup').style.display = 'flex'
+        return
+      }
+      // Post-login redirect based on role
+      if (role === 'recruiter') {
+        window.location.href = 'https://recruiter.skreenit.com/recruiter-profile.html'
+      } else if (role === 'candidate') {
+        window.location.href = 'https://applicants.skreenit.com/detailed-application-form.html'
+      }
+    })
   </script>
 </body>
 </html>

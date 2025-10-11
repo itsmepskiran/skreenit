@@ -667,6 +667,14 @@
             }
         }
     </style>
+    <script>
+        function redirectToLogin() {
+            window.location.href = 'https://login.skreenit.com/login.html';
+        }
+        function redirectToRegister() {
+            window.location.href = 'https://auth.skreenit.com/registration.html';
+        }
+    </script>
 </head>
 <body>
     <!-- Header -->
@@ -684,11 +692,11 @@
                     <li><a href="#contact">Contact Us</a></li>
                 </ul>
                 <div class="nav-buttons">
-                    <a href="https://login.skreenit.com/login.html" class="btn btn-secondary">
+                    <a href="https://login.skreenit.com/login.html" class="btn btn-secondary" onclick="redirectToLogin()">
                         <i class="fas fa-sign-in-alt"></i>
                         Login
                     </a>
-                    <a href="https://auth.skreenit.com/registration.html" class="btn btn-primary">
+                    <a href="https://auth.skreenit.com/registration.html" class="btn btn-primary" onclick="redirectToRegister()">
                         <i class="fas fa-rocket"></i>
                         Get Started
                     </a>
@@ -710,11 +718,11 @@
                 <h1>AI-Powered Recruitment Revolution</h1>
                 <p>Transform your hiring process with intelligent candidate matching, automated video screening, and comprehensive analytics. Connect top talent with leading companies seamlessly.</p>
                 <div class="hero-buttons">
-                    <a href="https://auth.skreenit.com/registration.html" class="btn btn-primary btn-large">
+                    <a href="https://auth.skreenit.com/registration.html" class="btn btn-primary btn-large" onclick="redirectToRegister()">
                         <i class="fas fa-rocket"></i>
                         Start Free Trial
                     </a>
-                    <a href="https://login.skreenit.com/login.html" class="btn btn-secondary btn-large">
+                    <a href="https://login.skreenit.com/login.html" class="btn btn-secondary btn-large" onclick="redirectToLogin()">
                         <i class="fas fa-sign-in-alt"></i>
                         Sign In
                     </a>
