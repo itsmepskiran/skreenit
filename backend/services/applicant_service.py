@@ -8,6 +8,27 @@ class ApplicantService:
     def __init__(self, client: Optional[Client] = None):
         self.supabase = client or get_client()
 
+    # Draft handling: store/retrieve JSON draft payload in candidate_drafts table
+    def save_draft(self, candidate_id: str, draft_payload: Dict[str, Any]) -> None:
+        try:
+            row = {"candidate_id": candidate_id, "draft": draft_payload}
+            # Upsert draft by candidate_id
+            res = self.supabase.table("candidate_drafts").upsert(row, on_conflict="candidate_id").execute()
+            if getattr(res, "error", None):
+                raise Exception(getattr(res, "error") or "Draft save error")
+        except Exception as e:
+            raise
+
+    def get_draft(self, candidate_id: str) -> Dict[str, Any]:
+        try:
+            res = self.supabase.table("candidate_drafts").select("draft").eq("candidate_id", candidate_id).single().execute()
+            if getattr(res, "error", None):
+                return {}
+            data = getattr(res, "data", None) or {}
+            return data.get("draft") or {}
+        except Exception:
+            return {}
+
     def save_detailed_form(
         self,
         candidate_id: str,
@@ -24,8 +45,9 @@ class ApplicantService:
                 .upsert(profile, on_conflict="id")
                 .execute()
             )
-            if getattr(res, "error", None):
-                raise Exception(f"Profile save error: {res.error}")
+            err = getattr(res, "error", None)
+            if err:
+                raise Exception(f"Profile save error: {err}")
 
         if education is not None:
             self.supabase.table("candidate_education").delete().eq(
@@ -37,8 +59,9 @@ class ApplicantService:
                     for e in education
                 ]
                 res = self.supabase.table("candidate_education").insert(to_insert).execute()
-                if getattr(res, "error", None):
-                    raise Exception(f"Education save error: {res.error}")
+                err = getattr(res, "error", None)
+                if err:
+                    raise Exception(f"Education save error: {err}")
 
         if experience is not None:
             self.supabase.table("candidate_experience").delete().eq(
@@ -50,8 +73,9 @@ class ApplicantService:
                     for e in experience
                 ]
                 res = self.supabase.table("candidate_experience").insert(to_insert).execute()
-                if getattr(res, "error", None):
-                    raise Exception(f"Experience save error: {res.error}")
+                err = getattr(res, "error", None)
+                if err:
+                    raise Exception(f"Experience save error: {err}")
 
         if skills is not None:
             self.supabase.table("candidate_skills").delete().eq(
@@ -71,8 +95,9 @@ class ApplicantService:
                 to_insert = [row for row in normalized if row.get("skill_name")]
                 if to_insert:
                     res = self.supabase.table("candidate_skills").insert(to_insert).execute()
-                    if getattr(res, "error", None):
-                        raise Exception(f"Skills save error: {res.error}")
+                    err = getattr(res, "error", None)
+                    if err:
+                        raise Exception(f"Skills save error: {err}")
 
     def get_detailed_form(self, candidate_id: str) -> Dict[str, Any]:
         result: Dict[str, Any] = {}

@@ -21,7 +21,10 @@ class AuthService:
         })
         if not getattr(res, "session", None):
             raise ValueError("Invalid credentials")
-        return {"ok": True, "data": {"access_token": res.session.access_token, "user": res.user}}
+        session = getattr(res, "session", None)
+        if not session:
+            raise ValueError("No session found in login response")
+        return {"ok": True, "data": {"access_token": session.access_token, "user": getattr(res, "user", None)}}
 
     def validate_token(self, bearer_token: str) -> Dict[str, Any]:
         headers = {
@@ -107,8 +110,9 @@ class AuthService:
                     "name": company_name,
                     "created_by": user_id,
                 }).execute()
-                if getattr(comp_ins, "error", None):
-                    raise Exception(comp_ins.error)
+                err = getattr(comp_ins, "error", None)
+                if err:
+                    raise Exception(err)
                 final_company_id = gen_id
                 try:
                     _ = self.supabase.auth.admin.update_user_by_id(user_id, {
@@ -184,7 +188,8 @@ class AuthService:
         if not company_id:
             try:
                 user = self.supabase.auth.admin.get_user_by_id(user_id)
-                meta = getattr(user, "user", None).user_metadata if getattr(user, "user", None) else {}
+                user_obj = getattr(user, "user", None)
+                meta = getattr(user_obj, "user_metadata", {}) if user_obj else {}
                 company_id = meta.get("company_id") if isinstance(meta, dict) else None
             except Exception:
                 company_id = None

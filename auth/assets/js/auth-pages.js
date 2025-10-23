@@ -82,7 +82,8 @@ async function redirectByRole(defaultUrl = 'https://dashboard.skreenit.com/candi
   try {
     // Check if this is first-time login by checking user profile completion
     const { data: { user } } = await supabase.auth.getUser()
-    const isFirstTimeLogin = !user?.user_metadata?.profile_completed
+    const isFirstTimeLogin = user?.user_metadata?.first_time_login === true
+    const hasUpdatedPassword = user?.user_metadata?.password_updated === true
     
   if (role === 'recruiter') {
       if (isFirstTimeLogin) {
@@ -135,31 +136,51 @@ export async function handleRegistrationSubmit(event) {
     const company_name = (fd.get('company_name') || '').trim()
     const resume = fd.get('resume')
 
-    if (!full_name || !email || !mobile || !location || !role) {
-      throw new Error('All required fields must be filled.')
+    // Validate role selection and required fields
+    if (!role || !['candidate', 'recruiter'].includes(role)) {
+      throw new Error('Please select a valid role (Candidate or Recruiter)')
     }
+    if (!full_name || !email || !mobile || !location) {
+      throw new Error('Please fill in all required fields')
+    }
+
     // Basic validations
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    if (!emailOk) throw new Error('Please enter a valid email address.')
-    if (mobile.length < 10) throw new Error('Please enter a valid mobile number.')
+    if (!emailOk) throw new Error('Please enter a valid email address')
+    if (mobile.length < 7) throw new Error('Please enter a valid mobile number')
 
-    // The backend now handles the Supabase signUp call. The frontend just sends the data.
+    // Recruiter must provide company name
+    if (role === 'recruiter' && !company_name) throw new Error('Company name is required for recruiters')
+
+    // Prepare payload for backend
     const bfd = new FormData()
     bfd.append('full_name', full_name)
     bfd.append('email', email)
+    bfd.append('mobile', mobile)
     bfd.append('location', location)
     bfd.append('role', role)
-    bfd.append('company_name', company_name || '')
+    if (company_name) bfd.append('company_name', company_name)
     if (resume && resume.size > 0) bfd.append('resume', resume)
 
-    const resp = await backendUploadFile('/auth/register', bfd )
+    const resp = await backendUploadFile('/auth/register', bfd)
     const result = await handleResponse(resp)
-    if (!result || result.ok === false) throw new Error(result?.error || 'Registration failed.')
+    if (!result || result.ok === false) throw new Error(result?.error || 'Registration failed')
 
-    // UX: do not redirect; let page show thank-you state
-    notify('Registration successful! Please check your email to verify your account.', 'success')
+    // Replace form body with thank-you content
+    const formEl = document.querySelector('.auth-body')
+    if (formEl) {
+      formEl.innerHTML = `
+        <div id="thankYou" class="thank-you-message">
+          <i class="fas fa-check-circle success-icon"></i>
+          <h2>Thank You for registering with us!</h2>
+          <p>Please check your email for the verification link and further instructions.</p>
+          <a href="https://login.skreenit.com/login.html" class="btn btn-primary">Go to Login</a>
+        </div>
+      `
+    }
+
     return true
-{{ ... }}
+  } catch (err) {
     console.error('Registration error:', err)
     notify(err.message || 'Registration failed. Please try again.', 'error')
     return false

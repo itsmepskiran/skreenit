@@ -1,6 +1,7 @@
 // Detailed Application Form logic (Shared)
 // Minimal stepper and submission logic with redirect to dashboards
 import { backendFetch } from './backend-client.js'
+import { supabase } from './supabase-config.js'
 
 const form = document.getElementById('detailedApplicationForm')
 const prevBtn = document.getElementById('prevBtn')
@@ -182,17 +183,34 @@ saveDraftBtn?.addEventListener('click', async () => {
       }
     }
     localStorage.setItem(`skreenit_draft_${userId}`, JSON.stringify(draft))
-    // Optional: send to backend if supported
+    // Send to backend draft endpoint (non-blocking)
     const token = localStorage.getItem('skreenit_token')
-    backendFetch('/applicant/detailed-form', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ candidate_id: userId, draft: true, ...draft })
-    }).catch(()=>{})
-    alert('Draft saved.')
+    try {
+      await backendFetch('/applicant/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ candidate_id: userId, draft })
+      })
+      alert('Draft saved.')
+    } catch (e) {
+      console.warn('Server draft save failed, draft saved locally', e)
+      alert('Draft saved locally. Server save failed.')
+    }
   } catch { alert('Could not save draft locally.') }
 })
-logoutBtn?.addEventListener('click', () => {
+logoutBtn?.addEventListener('click', async () => {
+  try {
+    // Attempt to sign out via Supabase which will also clear server session
+    await supabase.auth.signOut()
+  } catch (e) {
+    // ignore
+  }
+  try {
+    localStorage.removeItem('skreenit_token')
+    localStorage.removeItem('skreenit_refresh_token')
+    localStorage.removeItem('skreenit_user_id')
+    localStorage.removeItem('skreenit_role')
+  } catch {}
   window.location.href = 'https://login.skreenit.com/login.html'
 })
 

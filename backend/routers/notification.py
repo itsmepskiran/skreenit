@@ -21,7 +21,8 @@ def send_notification(notification: NotificationRequest):
     notif["created_at"] = datetime.utcnow().isoformat()
 
     result = client.table("notifications").insert(notif).execute()
-    if getattr(result, "error", None):
-        raise HTTPException(status_code=400, detail=f"Notification error: {result.error}")
+    err = getattr(result, "error", None)
+    if err:
+        raise HTTPException(status_code=400, detail=f"Notification error: {err}")
 
     return {"ok": True, "data": result.data}

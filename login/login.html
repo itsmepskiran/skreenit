@@ -38,17 +38,29 @@
     </div>
     <div class="auth-body">
       <form id="loginForm">
-        <div class="form-group animate-fadeInUp">
-          <label for="role">👤 Role*</label>
-          <select id="role" name="role" required>
-            <option value="">Select your role</option>
-            <option value="candidate">🎯 Candidate</option>
-            <option value="recruiter">🏢 Recruiter</option>
-          </select>
+        <div id="formError" class="error-message"></div>
+        
+        <div class="role-selection">
+          <div class="role-option" data-role="candidate">
+            <div class="role-icon">🎯</div>
+            <h3>Candidate</h3>
+            <p class="form-hint">Looking for opportunities</p>
+          </div>
+          <div class="role-option" data-role="recruiter">
+            <div class="role-icon">🏢</div>
+            <h3>Recruiter</h3>
+            <p class="form-hint">Hiring talent</p>
+          </div>
         </div>
+        
+        <input type="hidden" id="role" name="role" required>
+        
         <div class="form-group animate-fadeInLeft">
-          <label for="email">📧 User ID*</label>
-          <input type="email" id="email" name="email" required placeholder="Enter your email address" />
+          <label for="email">📧 Email Address*</label>
+          <input type="email" id="email" name="email" required 
+                 placeholder="Enter your email address" 
+                 autocomplete="email" />
+        </div>
         </div>
         <div class="form-group animate-fadeInRight">
           <label for="password">🔒 Password*</label>

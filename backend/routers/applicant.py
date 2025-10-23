@@ -13,7 +13,9 @@ router = APIRouter(tags=["applicant"])
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    raise RuntimeError("Supabase configuration missing in environment")
+supabase: Client = create_client(str(SUPABASE_URL), str(SUPABASE_SERVICE_ROLE_KEY))
 applicant_service = ApplicantService(supabase)
 
 def require_candidate(authorization: str = Header(default=None)):
@@ -47,8 +49,9 @@ def apply_job(payload: ApplicationRequest, user: dict = Depends(require_candidat
             "ai_analysis": ai_analysis or None,
         }
         res = supabase.table("job_applications").insert(insert_payload).execute()
-        if getattr(res, "error", None):
-            raise Exception(res.error)
+        err = getattr(res, "error", None)
+        if err:
+            raise Exception(err)
         return {"ok": True, "data": res.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Application failed: {str(e)}")
@@ -59,7 +62,7 @@ async def upload_resume(applicant_id: str = Form(...), resume: UploadFile = File
         content = await resume.read()
         return applicant_service.upload_resume(
             candidate_id=applicant_id,
-            filename=resume.filename,
+            filename=str(resume.filename or "resume.pdf"),
             content=content,
             content_type=resume.content_type or "application/octet-stream",
         )
@@ -99,9 +102,13 @@ def get_profile(request: Request, user: dict = Depends(require_candidate)):
 def get_candidate_profile(candidate_id: str, user: dict = Depends(require_candidate)):
     try:
         res = supabase.table("candidate_profiles").select("*").eq("user_id", candidate_id).single().execute()
-        if getattr(res, "error", None):
-            raise Exception(res.error)
-        return {"ok": True, "data": {"profile": res.data}}
+        err = getattr(res, "error", None)
+        if err:
+            raise Exception(err)
+        data = getattr(res, "data", None)
+        if not data:
+            return {"ok": True, "data": {"profile": {}}}
+        return {"ok": True, "data": {"profile": data}}
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Candidate profile not found: {str(e)}")
 
@@ -109,9 +116,13 @@ def get_candidate_profile(candidate_id: str, user: dict = Depends(require_candid
 def update_candidate_profile(candidate_id: str, payload: dict, user: dict = Depends(require_candidate)):
     try:
         res = supabase.table("candidate_profiles").update(payload).eq("user_id", candidate_id).execute()
-        if getattr(res, "error", None):
-            raise Exception(res.error)
-        return {"ok": True, "data": {"profile": res.data}}
+        err = getattr(res, "error", None)
+        if err:
+            raise Exception(err)
+        data = getattr(res, "data", None)
+        if not data:
+            return {"ok": True, "data": {"profile": {}}}
+        return {"ok": True, "data": {"profile": data}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Profile update failed: {str(e)}")
 
@@ -121,6 +132,19 @@ def save_detailed_form(payload: Dict[str, Any] = Body(...), user: dict = Depends
         candidate_id = payload.get("candidate_id")
         if not candidate_id:
             raise HTTPException(status_code=400, detail="candidate_id is required")
+        draft = payload.get('draft', False)
+        if draft:
+            # Save only profile subset as a draft and do not mark user as onboarded
+            applicant_service.save_detailed_form(
+                candidate_id=candidate_id,
+                profile=payload.get('profile') or {},
+                education=None,
+                experience=None,
+                skills=None,
+            )
+            return {"ok": True, "draft": True}
+
+        # Full save
         applicant_service.save_detailed_form(
             candidate_id=candidate_id,
             profile=payload.get("profile") or {},
@@ -142,3 +166,25 @@ def get_detailed_form(candidate_id: str, user: dict = Depends(require_candidate)
         return {"ok": True, "data": applicant_service.get_detailed_form(candidate_id)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch detailed form: {str(e)}")
+
+
+@router.post('/draft')
+def save_draft(payload: Dict[str, Any] = Body(...), user: dict = Depends(require_candidate)):
+    try:
+        candidate_id = payload.get('candidate_id')
+        if not candidate_id:
+            raise HTTPException(status_code=400, detail='candidate_id is required')
+        draft = payload.get('draft') or {}
+        applicant_service.save_draft(candidate_id, draft)
+        return {'ok': True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to save draft: {str(e)}')
+
+
+@router.get('/draft/{candidate_id}')
+def get_draft(candidate_id: str, user: dict = Depends(require_candidate)):
+    try:
+        draft = applicant_service.get_draft(candidate_id)
+        return {'ok': True, 'data': draft}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Failed to fetch draft: {str(e)}')

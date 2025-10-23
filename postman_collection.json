@@ -1,0 +1,588 @@
+{
+  "info": {
+    "name": "Skreenit API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "API collection for Skreenit recruitment platform"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication and user management endpoints",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/register",
+            "description": "Register a new user (candidate or recruiter)",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "full_name", "type": "text", "value": ""},
+                {"key": "email", "type": "text", "value": ""},
+                {"key": "mobile", "type": "text", "value": ""},
+                {"key": "location", "type": "text", "value": ""},
+                {"key": "role", "type": "text", "value": "", "description": "candidate or recruiter"},
+                {"key": "company_id", "type": "text", "value": "", "description": "Optional for recruiter"},
+                {"key": "company_name", "type": "text", "value": "", "description": "Required for recruiter"},
+                {"key": "resume", "type": "file", "value": "", "description": "Optional for candidate"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/login",
+            "description": "Login with email and password",
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "email": "",
+                "password": ""
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Password Updated",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/password-updated",
+            "description": "Notify backend that password was updated (triggers email for recruiter)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Applicant",
+      "description": "Candidate application and profile management",
+      "item": [
+        {
+          "name": "Apply for Job",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/applicant/apply",
+            "description": "Submit job application",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "job_id": "",
+                "cover_letter": "",
+                "ai_analysis": {}
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Upload Resume",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/applicant/upload-resume",
+            "description": "Upload candidate resume",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "applicant_id", "type": "text", "value": ""},
+                {"key": "resume", "type": "file", "value": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Resume URL",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/applicant/resume-url/{{candidate_id}}",
+            "description": "Get signed URL for resume download",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/applicant/profile",
+            "description": "Get current candidate profile",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        },
+        {
+          "name": "Get Candidate Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/applicant/profile/{{candidate_id}}",
+            "description": "Get specific candidate's profile",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        },
+        {
+          "name": "Update Candidate Profile",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/applicant/profile/{{candidate_id}}",
+            "description": "Update candidate profile",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "education": [],
+                "experience": [],
+                "skills": []
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Save Detailed Form",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/applicant/detailed-form",
+            "description": "Save complete candidate profile form",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "candidate_id": "",
+                "profile": {},
+                "education": [],
+                "experience": [],
+                "skills": []
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Detailed Form",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/applicant/detailed-form/{{candidate_id}}",
+            "description": "Get complete candidate profile form",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        },
+        {
+          "name": "Save Draft",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/applicant/draft",
+            "description": "Save form draft",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "candidate_id": "",
+                "draft": {}
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Draft",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/applicant/draft/{{candidate_id}}",
+            "description": "Get saved form draft",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recruiter",
+      "description": "Job and company management for recruiters",
+      "item": [
+        {
+          "name": "Post Job",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/recruiter/post-job",
+            "description": "Create new job posting",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "title": "",
+                "description": "",
+                "requirements": [],
+                "location": "",
+                "job_type": "",
+                "salary_range": "",
+                "company": "",
+                "status": "active"
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List Jobs",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/recruiter/jobs",
+            "description": "List all jobs",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        },
+        {
+          "name": "Get Job",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/recruiter/job/{{job_id}}",
+            "description": "Get job details",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        },
+        {
+          "name": "Update Job",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/recruiter/job/{{job_id}}",
+            "description": "Update job posting",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "title": "",
+                "description": "",
+                "status": ""
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Job",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/recruiter/job/{{job_id}}",
+            "description": "Delete job posting",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        },
+        {
+          "name": "List Companies",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/recruiter/companies",
+            "description": "List all companies",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        },
+        {
+          "name": "Create Company",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/recruiter/companies",
+            "description": "Create new company",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "name": "",
+                "description": "",
+                "website": ""
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Create/Update Recruiter Profile",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/recruiter/profile",
+            "description": "Create or update recruiter profile",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "user_id": "",
+                "company_id": "",
+                "company_name": "",
+                "title": "",
+                "phone": ""
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Recruiter Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/recruiter/profile/{{user_id}}",
+            "description": "Get recruiter profile",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Video",
+      "description": "Video interview management",
+      "item": [
+        {
+          "name": "Add Video Response",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/video/response",
+            "description": "Add video response for application",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "application_id": "",
+                "question_id": "",
+                "video_url": "",
+                "transcript": "",
+                "duration": 0
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List Video Responses",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/video/application/{{application_id}}/responses",
+            "description": "List all video responses for application",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        },
+        {
+          "name": "Upload General Video",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/video/general",
+            "description": "Upload general interview video",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "candidate_id", "type": "text", "value": ""},
+                {"key": "application_id", "type": "text", "value": "", "description": "Optional"},
+                {"key": "question_id", "type": "text", "value": "", "description": "Optional"},
+                {"key": "video", "type": "file", "value": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get General Video",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/video/general/{{candidate_id}}",
+            "description": "Get general video details",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        },
+        {
+          "name": "Get Signed Video URL",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/video/signed-url/{{file_path}}",
+            "description": "Get signed URL for video access",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "User dashboard data",
+      "item": [
+        {
+          "name": "Get Dashboard Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/dashboard/summary/{{user_id}}",
+            "description": "Get dashboard summary for user",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "description": "Analytics event tracking",
+      "item": [
+        {
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/analytics",
+            "description": "Track analytics event",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "event_type": "",
+                "event_data": {},
+                "user_id": "",
+                "session_id": "",
+                "page_url": ""
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List User Events",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/analytics/user/{{user_id}}",
+            "description": "Get analytics events for user",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notification",
+      "description": "Notification management",
+      "item": [
+        {
+          "name": "Send Notification",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/notification/notify",
+            "description": "Send notification",
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "user_id": "",
+                "type": "",
+                "title": "",
+                "message": "",
+                "data": {}
+              },
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    }
+  ]
+}

@@ -197,7 +197,24 @@
       // Hide error and thank you
       const errEl = document.getElementById('formError')
       if (errEl) errEl.textContent = ''
-      const thankEl = document.getElementById('thankYou')
+      const formContent = document.querySelector('.auth-body')
+      
+      // Create thank you message
+      const thankEl = document.createElement('div')
+      thankEl.id = 'thankYou'
+      thankEl.className = 'thank-you-message animate-fadeInUp'
+      thankEl.innerHTML = `
+        <i class="fas fa-check-circle success-icon"></i>
+        <h2>Thank You for registering with us!</h2>
+        <p>Please check your email for login credentials and verification link.</p>
+        <p>After verifying your email, you'll be able to set your password.</p>
+        <div class="action-buttons">
+          <a href="https://login.skreenit.com/login.html" class="btn btn-primary">
+            <i class="fas fa-sign-in-alt"></i>
+            Go to Login
+          </a>
+        </div>
+      `
       if (thankEl) thankEl.classList.add('hidden')
 
       // Run registration flow

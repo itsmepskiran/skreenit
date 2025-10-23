@@ -34,6 +34,15 @@ export const auth = {
     // Sign out user
     async signOut() {
         const { error } = await supabase.auth.signOut()
+        try {
+            // Clear local storage keys used across subdomains
+            localStorage.removeItem('skreenit_token')
+            localStorage.removeItem('skreenit_refresh_token')
+            localStorage.removeItem('skreenit_user_id')
+            localStorage.removeItem('skreenit_role')
+        } catch {}
+        // Redirect to centralized login page
+        try { window.location.href = 'https://login.skreenit.com/login.html' } catch {}
         return { error }
     },
 

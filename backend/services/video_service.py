@@ -13,8 +13,9 @@ class VideoService:
             file_extension = filename.split('.')[-1] if '.' in filename else 'mp4'
             unique_filename = f"{candidate_id}/{uuid.uuid4()}.{file_extension}"
             storage_response = self.supabase.storage.from_(self.bucket_name).upload(unique_filename, file_content)
-            if getattr(storage_response, "error", None):
-                raise Exception(f"Storage upload failed: {storage_response.error}")
+            err = getattr(storage_response, "error", None)
+            if err:
+                raise Exception(f"Storage upload failed: {err}")
             public_url = self.supabase.storage.from_(self.bucket_name).get_public_url(unique_filename)
             return public_url
         except Exception as e:
@@ -40,9 +41,13 @@ class VideoService:
                 "recorded_at": datetime.utcnow().isoformat()
             }
             res = self.supabase.table("video_responses").insert(payload).execute()
-            if getattr(res, "error", None):
-                raise Exception(res.error)
-            return res.data[0] if res.data else None
+            err = getattr(res, "error", None)
+            if err:
+                raise Exception(err)
+            data = getattr(res, "data", None)
+            if not data:
+                return {}
+            return data[0] if isinstance(data, list) and data else {}
         except Exception as e:
             raise Exception(f"Failed to save video response: {str(e)}")
 
@@ -57,17 +62,22 @@ class VideoService:
                 "ai_analysis": ai_analysis or {}
             }
             res = self.supabase.table("general_video_interviews").upsert(payload, on_conflict="candidate_id").execute()
-            if getattr(res, "error", None):
-                raise Exception(res.error)
-            return res.data[0] if res.data else None
+            err = getattr(res, "error", None)
+            if err:
+                raise Exception(err)
+            data = getattr(res, "data", None)
+            if not data:
+                return {}
+            return data[0] if isinstance(data, list) and data else {}
         except Exception as e:
             raise Exception(f"Failed to save general video: {str(e)}")
 
     def get_video_responses(self, application_id: str) -> Dict[str, Any]:
         try:
             res = self.supabase.table("video_responses").select("*").eq("application_id", application_id).execute()
-            if getattr(res, "error", None):
-                raise Exception(res.error)
+            err = getattr(res, "error", None)
+            if err:
+                raise Exception(err)
             return {"responses": res.data}
         except Exception as e:
             raise Exception(f"Failed to fetch video responses: {str(e)}")
@@ -75,8 +85,9 @@ class VideoService:
     def get_candidate_videos(self, candidate_id: str) -> Dict[str, Any]:
         try:
             res = self.supabase.table("video_responses").select("*").eq("candidate_id", candidate_id).execute()
-            if getattr(res, "error", None):
-                raise Exception(res.error)
+            err = getattr(res, "error", None)
+            if err:
+                raise Exception(err)
             return {"videos": res.data}
         except Exception as e:
             raise Exception(f"Failed to fetch candidate videos: {str(e)}")

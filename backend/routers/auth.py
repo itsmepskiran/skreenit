@@ -26,8 +26,29 @@ async def register(
     company_name: str = Form(None),
     resume: UploadFile = File(None)
 ):
+    """Register a new user with role-specific handling"""
     try:
-        resume_bytes = await resume.read() if resume is not None else None
+        # Validate role
+        if role not in ['candidate', 'recruiter']:
+            raise HTTPException(status_code=400, detail="Invalid role specified")
+        
+        # Validate recruiter-specific fields
+        if role == 'recruiter' and not company_name:
+            raise HTTPException(status_code=400, detail="Company name is required for recruiter registration")
+            
+        # Handle resume for candidates
+        resume_bytes = None
+        resume_filename = None
+        if resume and role == 'candidate':
+            # Validate file type
+            allowed_types = ['application/pdf', 'application/msword', 
+                           'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+            if resume.content_type not in allowed_types:
+                raise HTTPException(status_code=400, detail="Invalid resume format. Please upload PDF or DOC/DOCX file")
+            resume_bytes = await resume.read()
+            resume_filename = resume.filename
+            
+        # Register user
         result = auth_service.register(
             full_name=full_name,
             email=email,
@@ -37,9 +58,16 @@ async def register(
             company_id=company_id,
             company_name=company_name,
             resume_bytes=resume_bytes,
-            resume_filename=resume.filename if resume is not None else None
+            resume_filename=resume_filename
         )
-        return {"ok": True, "data": result}
+        
+        return {
+            "ok": True,
+            "data": result,
+            "message": "Registration successful! Please check your email to verify your account."
+        }
+    except HTTPException as he:
+        return JSONResponse(status_code=he.status_code, content={"ok": False, "error": he.detail})
     except Exception as e:
         return JSONResponse(status_code=400, content={"ok": False, "error": str(e)})
 

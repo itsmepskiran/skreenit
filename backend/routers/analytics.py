@@ -9,8 +9,9 @@ router = APIRouter(tags=["analytics"])
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    raise RuntimeError("Supabase configuration missing in environment")
+supabase: Client = create_client(str(SUPABASE_URL), str(SUPABASE_SERVICE_ROLE_KEY))
 
 @router.post("/")
 async def create_event(payload: AnalyticsEventRequest, authorization: str = Header(default=None)):
@@ -26,8 +27,9 @@ async def create_event(payload: AnalyticsEventRequest, authorization: str = Head
             except Exception:
                 pass
         res = supabase.table("analytics_events").insert(data).execute()
-        if getattr(res, "error", None):
-            raise Exception(f"Analytics insert error: {res.error}")
+        err = getattr(res, "error", None)
+        if err:
+            raise Exception(f"Analytics insert error: {err}")
         return {"ok": True, "data": res.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create event: {str(e)}")
@@ -36,8 +38,9 @@ async def create_event(payload: AnalyticsEventRequest, authorization: str = Head
 def list_events(user_id: str):
     try:
         res = supabase.table("analytics_events").select("*").eq("user_id", user_id).execute()
-        if getattr(res, "error", None):
-            raise Exception(f"Analytics fetch error: {res.error}")
+        err = getattr(res, "error", None)
+        if err:
+            raise Exception(f"Analytics fetch error: {err}")
         return {"ok": True, "data": res.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch events: {str(e)}")
