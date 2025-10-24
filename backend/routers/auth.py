@@ -1,19 +1,31 @@
 from fastapi import APIRouter, Request, HTTPException, Form, UploadFile, File
 from fastapi.responses import JSONResponse
-import os
-from supabase import create_client, Client
 from dotenv import load_dotenv
 from models.auth_models import LoginRequest
 from services.auth_service import AuthService
+from services.supabase_client import get_client
 from typing import Optional
 
+# Do NOT create the Supabase client at module import time. Creating it during import
+# will cause the app to crash on startup when Railway (or any host) hasn't provided
+# environment secrets yet. Instead we lazily initialize the client and AuthService
+# on first request. This keeps the app importable and avoids deployment failures.
 load_dotenv()
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 router = APIRouter(tags=["auth"])
-auth_service = AuthService(supabase)
+_auth_service: Optional[AuthService] = None
+
+def get_auth_service() -> AuthService:
+    global _auth_service
+    if _auth_service is None:
+        # Attempt to create a Supabase client from environment
+        try:
+            supabase = get_client()
+        except Exception as e:
+            # Re-raise a clear error so endpoints can return a controlled response
+            raise RuntimeError("Supabase client not configured: " + str(e)) from e
+        _auth_service = AuthService(supabase)
+    return _auth_service
 
 @router.post("/register")
 async def register(
@@ -49,7 +61,12 @@ async def register(
             resume_filename = resume.filename
             
         # Register user
-        result = auth_service.register(
+        try:
+            service = get_auth_service()
+        except RuntimeError as re:
+            return JSONResponse(status_code=500, content={"ok": False, "error": str(re)})
+
+        result = service.register(
             full_name=full_name,
             email=email,
             mobile=mobile,
@@ -74,7 +91,12 @@ async def register(
 @router.post("/login")
 async def login(request: LoginRequest):
     try:
-        result = auth_service.login(request.email, request.password)
+        try:
+            service = get_auth_service()
+        except RuntimeError as re:
+            return JSONResponse(status_code=500, content={"ok": False, "error": str(re)})
+
+        result = service.login(request.email, request.password)
         return result  # already {"ok": True, "data": {...}}
     except Exception as e:
         return JSONResponse(status_code=401, content={"ok": False, "error": str(e)})
@@ -86,7 +108,12 @@ async def password_updated(request: Request):
         if not auth_header or not auth_header.lower().startswith("bearer "):
             return JSONResponse(status_code=401, content={"ok": False, "error": "Missing Authorization header"})
         token = auth_header.split(" ", 1)[1]
-        user_info = auth_service.validate_token(token)
+        try:
+            service = get_auth_service()
+        except RuntimeError as re:
+            return JSONResponse(status_code=500, content={"ok": False, "error": str(re)})
+
+        user_info = service.validate_token(token)
         user = user_info.get("user") or {}
         email = user.get("email")
         metadata = user.get("user_metadata") or {}

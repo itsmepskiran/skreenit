@@ -1,17 +1,21 @@
 from fastapi import APIRouter, HTTPException, Header
-import os
-from supabase import create_client, Client
 from models.analytics_models import AnalyticsEventRequest
 from datetime import datetime
 from utils_others.security import get_user_from_bearer
+from services.supabase_client import get_client
 
 router = APIRouter(tags=["analytics"])
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
-    raise RuntimeError("Supabase configuration missing in environment")
-supabase: Client = create_client(str(SUPABASE_URL), str(SUPABASE_SERVICE_ROLE_KEY))
+_supabase = None
+
+def get_supabase_client():
+    global _supabase
+    if _supabase is None:
+        try:
+            _supabase = get_client()
+        except Exception as e:
+            raise RuntimeError("Supabase client not configured: " + str(e)) from e
+    return _supabase
 
 @router.post("/")
 async def create_event(payload: AnalyticsEventRequest, authorization: str = Header(default=None)):
@@ -26,6 +30,7 @@ async def create_event(payload: AnalyticsEventRequest, authorization: str = Head
                 data["user_id"] = user.get("id")
             except Exception:
                 pass
+        supabase = get_supabase_client()
         res = supabase.table("analytics_events").insert(data).execute()
         err = getattr(res, "error", None)
         if err:
@@ -37,6 +42,7 @@ async def create_event(payload: AnalyticsEventRequest, authorization: str = Head
 @router.get("/user/{user_id}")
 def list_events(user_id: str):
     try:
+        supabase = get_supabase_client()
         res = supabase.table("analytics_events").select("*").eq("user_id", user_id).execute()
         err = getattr(res, "error", None)
         if err:
