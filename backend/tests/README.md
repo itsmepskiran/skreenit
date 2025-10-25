@@ -15,7 +15,7 @@ These tests are designed to run against a deployed or locally running FastAPI ba
 
 The tests use environment variables for base URL and bearer tokens.
 
-- `SKREENIT_BASE_URL` (required): e.g. `https://skreenit-api.onrender.com` or `http://127.0.0.1:8000`
+- `SKREENIT_BASE_URL` (required): e.g. `https://auth.skreenit.com` or `http://127.0.0.1:8000`
 - `CANDIDATE_TOKEN` (optional, required for candidate-protected tests)
 - `RECRUITER_TOKEN` (optional, required for recruiter-protected tests)
 - `CANDIDATE_ID` (optional; used by some tests)
@@ -25,7 +25,7 @@ The tests use environment variables for base URL and bearer tokens.
 Example (PowerShell):
 
 ```powershell
-$env:SKREENIT_BASE_URL = "https://skreenit-api.onrender.com"
+$env:SKREENIT_BASE_URL = "https://auth.skreenit.com"
 $env:CANDIDATE_TOKEN = "eyJ..."
 $env:RECRUITER_TOKEN = "eyJ..."
 $env:CANDIDATE_ID = "00000000-0000-0000-0000-000000000000"

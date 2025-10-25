@@ -71,7 +71,7 @@ The Skreenit project has been reorganized according to your requirements with th
    ENVIRONMENT=production
    ```
 
-2. **Deploy to Railway/Render**:
+2. **Deploy to your production host**:
    - Use `backend/` as the root directory
    - Install dependencies: `pip install -r requirements.txt`
    - Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`

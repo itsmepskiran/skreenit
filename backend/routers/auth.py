@@ -7,8 +7,8 @@ from services.supabase_client import get_client
 from typing import Optional
 
 # Do NOT create the Supabase client at module import time. Creating it during import
-# will cause the app to crash on startup when Railway (or any host) hasn't provided
-# environment secrets yet. Instead we lazily initialize the client and AuthService
+# will cause the app to crash on startup when environment secrets are not yet provided
+# by the hosting environment. Instead we lazily initialize the client and AuthService
 # on first request. This keeps the app importable and avoids deployment failures.
 load_dotenv()
 

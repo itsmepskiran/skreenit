@@ -2,7 +2,7 @@
 
 // A resilient backend client with environment-aware base URLs, timeout, and failover.
 // Key features:
-// - Env-based URLs: localhost for dev, Render primary, Railway secondary for prod
+// - Env-based URLs: localhost for dev, configurable production backend via a global
 // - Timeout using AbortController
 // - Failover only on network errors or 5xx responses (not on 4xx like 422)
 // - FormData-safe: does NOT set Content-Type when body is FormData
@@ -23,10 +23,14 @@ class BackendClient {
     if (isLocal) {
       return ['http://localhost:8000']
     }
-    // Production with failover
+    // Production primary URL is configurable via a global injected variable
+    // e.g. set window.__SKREENIT_BACKEND_URL__ = 'https://api.example.com' in your HTML
+    const configured = (typeof window !== 'undefined' && window.__SKREENIT_BACKEND_URL__) ? window.__SKREENIT_BACKEND_URL__ : null
+    if (configured) return [configured]
+    // Fallback production host — using the existing `auth.skreenit.com` subdomain for API
+    // Note: ensure your hosting platform routes API requests to the backend on this domain.
     return [
-      'https://aiskreenit.onrender.com',
-      'https://skreenit.up.railway.app'
+      'https://auth.skreenit.com'
     ]
   }
 

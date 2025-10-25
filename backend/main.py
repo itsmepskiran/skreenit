@@ -75,9 +75,7 @@ def validate_origins(origins_list):
         if os.getenv("ENVIRONMENT") == "production":
             # Only allow specific production domains
             allowed_domains = [
-                ".skreenit.com",
-                ".onrender.com",
-                ".railway.app"
+                ".skreenit.com"
             ]
             if not any(domain in origin for domain in allowed_domains):
                 print(f"Warning: Production origin not in allowed domains: {origin}")
