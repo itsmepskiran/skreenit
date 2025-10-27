@@ -1,0 +1,61 @@
+[build]
+  # Base directory that contains the package.json file
+  base    = "/"
+  # Directory to change to before starting a build
+  publish = "build"
+  command = "npm run build"
+
+# For a Python backend with a React frontend, you might use something like:
+[build.environment]
+  PYTHON_VERSION = "3.9"
+  NODE_VERSION = "16"
+  NPM_VERSION = "8"
+
+# For a Python backend, you might need to specify Python requirements
+[[plugins]]
+  package = "@netlify/plugin-python"
+
+# For a React frontend (adjust based on your actual frontend framework)
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Redirects for SPA (Single Page Application)
+# This ensures all routes work with client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# API proxy for backend requests (adjust the backend URL as needed)
+[[redirects]]
+  from = "/api/*"
+  to = "https://auth.skreenit.com/:splat"  # Replace with your actual backend URL
+  status = 200
+  force = true
+
+# Environment variables (you'll set these in Netlify UI)
+[build.environment]
+  NODE_ENV = "production"
+  # Add other environment variables here or in Netlify UI
+
+# For Python applications, you might need to specify the Python version
+[build.processing]
+  skip_processing = false
+
+# For server-side functions (if using Netlify Functions)
+[functions]
+  # Directory where your Netlify Functions are stored
+  directory = "functions/"
+  # Node.js version for functions
+  node_bundler = "esbuild"
+
+# For build optimization
+[build.optimization]
+  bundle = true
+  minify = true
+  target = ["es2017"]
+
+# For build speed improvements
+[build.caching]
+  # Cache the following directories between builds
+  paths = ["node_modules/.cache", ".cache"]
