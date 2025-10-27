@@ -5,11 +5,15 @@
   publish = "build"
   command = "npm run build"
 
-# For a Python backend with a React frontend, you might use something like:
+# Environment settings
 [build.environment]
+  # Python settings
   PYTHON_VERSION = "3.9"
+  # Node.js settings
   NODE_VERSION = "16"
   NPM_VERSION = "8"
+  # Environment variables
+  NODE_ENV = "production"
 
 # For a Python backend, you might need to specify Python requirements
 [[plugins]]
@@ -33,10 +37,7 @@
   status = 200
   force = true
 
-# Environment variables (you'll set these in Netlify UI)
-[build.environment]
-  NODE_ENV = "production"
-  # Add other environment variables here or in Netlify UI
+# Add other environment variables here or in Netlify UI
 
 # For Python applications, you might need to specify the Python version
 [build.processing]
