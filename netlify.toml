@@ -10,10 +10,13 @@
   # Python settings
   PYTHON_VERSION = "3.9"
   # Node.js settings
-  NODE_VERSION = "16"
-  NPM_VERSION = "8"
+  NODE_VERSION = "18"  # Updated to LTS version
+  NPM_VERSION = "9"    # Updated to match Node 18
   # Environment variables
   NODE_ENV = "production"
+  # Ensure Python is not compiled from source
+  PYTHON_SETUP_REQUIRES = "pip"
+  PIPENV_RUN_BIN = "/opt/buildhome/python3.9/bin"
 
 # For a Python backend, you might need to specify Python requirements
 [[plugins]]
